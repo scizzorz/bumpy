@@ -12,23 +12,23 @@ def compile():
 	'''Compiles the project.'''
 	print 'compile()'
 
-@task(requires=[compile])
+@task(compile)
 def run():
 	'''Runs the project.'''
 	print 'run()'
 
-@task(requires=[run])
+@task(run)
 def stop():
 	'''Stops the project.'''
 	print 'stop()'
 
-@task(requires=[compile])
+@task(compile)
 def abort():
 	'''Raises an AbortException to fail the build.'''
 	print 'abort()'
 	raise AbortException('Aborted.')
 
-@task(requires=[abort])
+@task(abort)
 def bad():
 	'''A bad task.'''
 	print 'bad()'
