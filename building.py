@@ -111,11 +111,12 @@ def require(*requirements):
 				abort(LOCALE['abort_bad_task'].format(req))
 
 
-def age(path):
-	if not os.path.exists(path):
-		return time.time()
+def age(*paths):
+	for path in paths:
+		if not os.path.exists(path):
+			return time.time()
 
-	return time.time() - os.path.getmtime(path)
+	return min([(time.time() - os.path.getmtime(path)) for path in paths])
 
 def main(args):
 	if len(args) == 0:
