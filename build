@@ -12,7 +12,7 @@ def compile():
 	'''Compiles the project.'''
 	print 'compile()'
 
-@task(compile)
+@task(clean, compile)
 def run():
 	'''Runs the project.'''
 	print 'run()'

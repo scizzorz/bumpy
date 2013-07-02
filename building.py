@@ -42,9 +42,10 @@ class Task:
 
 	def __call__(self, *args, **kwargs):
 		if self.requires:
-			print LOCALE['execute_multi'].format(self, self.requires)
+			print LOCALE['execute_multi'].format(self, self.reqstr())
 		else:
 			print LOCALE['execute_single'].format(self)
+
 		for req in self.requires:
 			if req.valid is None:
 				req()
@@ -74,6 +75,9 @@ class Task:
 
 		return _highlight('[' + self.name + ']', color)
 
+	def reqstr(self):
+		return ', '.join(x.__repr__() for x in self.requires)
+
 
 def task(*requires):
 	def wrapper(f):
@@ -96,7 +100,7 @@ def main(args):
 			print LOCALE['help_command'].format(t, t.help)
 
 			if t.requires:
-				print LOCALE['help_requires'].format(t.requires)
+				print LOCALE['help_requires'].format(t.reqstr())
 
 	else:
 		for arg in args:
