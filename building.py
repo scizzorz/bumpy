@@ -8,12 +8,11 @@ CONFIG = {
 }
 
 LOCALE = {
-	'execute': 'execute\t{}',
+	'execute_single': 'execute\t{}',
+	'execute_multi': 'execute\t{} - {}',
 	'abort': 'abort  \t{} - {}',
 	'abort_bad_require': 'abort  \t{} - {} require failed',
-	'abort_no_buildfile': 'abort  \t- no build.py found',
-	'require': 'require\t{}',
-	'help_command': '{}\t- {}',
+	'help_command': '{} - {}',
 	'help_requires': '\t- requires {}',
 	'help_unknown': 'unknown command: {}',
 }
@@ -42,7 +41,10 @@ class Task:
 		self.valid = None
 
 	def __call__(self, *args, **kwargs):
-		print LOCALE['execute'].format(self)
+		if self.requires:
+			print LOCALE['execute_multi'].format(self, self.requires)
+		else:
+			print LOCALE['execute_single'].format(self)
 		for req in self.requires:
 			if req.valid is None:
 				req()
