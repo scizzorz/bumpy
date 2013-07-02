@@ -5,8 +5,20 @@ CONFIG = {
 	'color_tasks': 4,
 }
 
-task_list = []
-task_dict = {}
+LOCALE = {
+	'execute': 'execute\t{}',
+	'abort': 'abort  \t{} - {}',
+	'abort_bad_require': 'abort  \t{} - {} require failed',
+	'abort_no_buildfile': 'abort  \t- no build.py found',
+	'require': 'require\t{}',
+	'help_command': '{}\t- {}',
+	'help_creates': '\t- creates {}',
+	'help_requires': '\t- requires {}',
+	'help_unknown': 'unknown command: {}',
+}
+
+LIST = []
+DICT = {}
 
 class AbortException(Exception):
 	def __init__(self, message):
@@ -23,18 +35,18 @@ class Task:
 		self.valid = False
 
 	def __call__(self, *args, **kwargs):
-		print 'execute {}'.format(self)
+		print LOCALE['execute'].format(self)
 		for req in self.requires:
 			if not req.valid:
-				print '\trequire {}'.format(req)
+				print LOCALE['require'].format(req)
 				if req() == False:
-					print 'abort {} - {} require failed'.format(self, req)
+					print LOCALE['abort_bad_require'].format(self, req)
 					return False
 
 		try:
 			self.func(*args, **kwargs)
 		except AbortException, ex:
-			print 'abort {} - {}'.format(self, ex.message)
+			print LOCALE['abort'].format(self, ex.message)
 			return False
 
 		self.valid = True
@@ -46,8 +58,8 @@ class Task:
 def task(requires=[], creates=[]):
 	def wrapper(f):
 		new_task = Task(f, requires, creates)
-		task_list.append(new_task)
-		task_dict[new_task.name] = new_task
+		LIST.append(new_task)
+		DICT[new_task.name] = new_task
 		return new_task
 
 	return wrapper
@@ -61,18 +73,21 @@ def highlight(string, color):
 
 def main(args):
 	if len(args) == 0:
-		for t in task_list:
-			print '{} - {}'.format(t, t.help)
+		for t in LIST:
+			print LOCALE['help_command'].format(t, t.help)
+
 			if t.creates:
-				print '\tcreates:', t.creates
+				print LOCALE['help_creates'].format(t.creates)
+
 			if t.requires:
-				print '\trequires:', t.requires
+				print LOCALE['help_requires'].format(t.requires)
+
 	else:
 		for arg in args:
-			if arg in task_dict:
-				task_dict[arg]()
+			if arg in DICT:
+				DICT[arg]()
 			else:
-				print 'unknown command: {}'.format(arg)
+				print LOCALE['help_unknown'].format(arg)
 
 
 @task()
