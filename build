@@ -6,7 +6,7 @@ from building import task, requires, age, require, shell, abort, main
 @task
 def clean():
 	'''Cleans the project.'''
-	shell('rm', 'exe')
+	shell('rm exe')
 	print 'cleaning...'
 
 # File requirement
@@ -15,7 +15,7 @@ def clean():
 def compile():
 	'''Compiles the project.'''
 	if age('src', 'src2') < age('exe'):
-		shell('touch', 'exe')
+		shell('touch exe')
 		print 'compiling...'
 
 # task requirement

@@ -84,9 +84,9 @@ def task(func):
 def abort(message):
 	raise AbortException(message)
 
-def shell(*command):
+def shell(command):
 	try:
-		return subprocess.check_output(list(command))
+		return subprocess.check_output(command, shell=True)
 	except subprocess.CalledProcessError, ex:
 		return ex
 
