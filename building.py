@@ -1,4 +1,4 @@
-import sys
+import sys, subprocess, os, time
 
 CONFIG = {
 	'color': True,
@@ -12,9 +12,10 @@ LOCALE = {
 	'execute_multi': 'execute\t{} - {}',
 	'finish': 'finish \t{}',
 	'abort': 'abort  \t{} - {}',
-	'abort_bad_require': 'abort  \t{} - {} require failed',
+	'abort_bad_task': 'required task {} failed',
+	'abort_bad_file': "required file '{}' does not exist",
 	'help_command': '{} - {}',
-	'help_requires': '\t- requires {}',
+	'help_requires': '\trequires {}',
 	'help_unknown': 'unknown command: {}',
 }
 
@@ -33,30 +34,22 @@ class AbortException(Exception):
 		Exception.__init__(self, message)
 
 class Task:
-	def __init__(self, func, requires):
+	def __init__(self, func):
 		self.func = func
 		self.name = func.__name__
 		self.help = func.__doc__
-		self.requires = requires
 
+		self.requirements = ()
 		self.valid = None
 
 	def __call__(self, *args, **kwargs):
-		if self.requires:
+		if self.requirements:
 			print LOCALE['execute_multi'].format(self, self.reqstr())
 		else:
 			print LOCALE['execute_single'].format(self)
 
-		for req in self.requires:
-			if req.valid is None:
-				req()
-
-			if req.valid == False:
-				self.valid = False
-				print LOCALE['abort_bad_require'].format(self, req)
-				return False
-
 		try:
+			require(*self.requirements)
 			self.func(*args, **kwargs)
 		except AbortException, ex:
 			self.valid = False
@@ -78,31 +71,59 @@ class Task:
 		return _highlight('[' + self.name + ']', color)
 
 	def reqstr(self):
-		return ', '.join(x.__repr__() for x in self.requires)
+		return ', '.join(x.__repr__() for x in self.requirements)
 
 
-def task(*requires):
-	def wrapper(f):
-		new_task = Task(f, requires)
-		LIST.append(new_task)
-		DICT[new_task.name] = new_task
-		return new_task
+def task(func):
+	if not isinstance(func, Task):
+		func = Task(func)
+		LIST.append(func)
+		DICT[func.name] = func
+	return func
 
-	return wrapper
+def abort(message):
+	raise AbortException(message)
 
-def shell(command):
+def shell(*command):
 	try:
-		return subprocess.check_output(command)
+		return subprocess.check_output(list(command))
 	except subprocess.CalledProcessError, ex:
 		return ex
 
+def requires(*requirements):
+	def wrapper(func):
+		func = task(func)
+		func.requirements = requirements
+		return func
+
+	return wrapper
+
+def require(*requirements):
+	for req in requirements:
+		if type(req) is str:
+			if not os.path.exists(req):
+				abort(LOCALE['abort_bad_file'].format(req))
+		else:
+			if req.valid is None:
+				req()
+
+			if req.valid == False:
+				abort(LOCALE['abort_bad_task'].format(req))
+
+
+def age(path):
+	if not os.path.exists(path):
+		return time.time()
+
+	return time.time() - os.path.getmtime(path)
+
 def main(args):
 	if len(args) == 0:
-		for t in LIST:
-			print LOCALE['help_command'].format(t, t.help)
+		for task in LIST:
+			print LOCALE['help_command'].format(task, task.help)
 
-			if t.requires:
-				print LOCALE['help_requires'].format(t.reqstr())
+			if task.requirements:
+				print LOCALE['help_requires'].format(task.reqstr())
 
 	else:
 		for arg in args:

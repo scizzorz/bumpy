@@ -1,37 +1,55 @@
 #!/usr/bin/env python
 import sys
-from building import task, main, AbortException
+from building import task, requires, age, require, shell, abort, main
 
-@task()
+# no requirements
+@task
 def clean():
 	'''Cleans the project.'''
-	print 'clean()'
+	shell("rm", "exe")
+	print 'cleaning...'
 
-@task()
+# File requirement
+@task
+@requires("src")
 def compile():
 	'''Compiles the project.'''
-	print 'compile()'
+	if age("src") < age("exe"):
+		shell("touch", "exe")
+		print 'compiling...'
 
-@task(clean, compile)
+# task requirement
+# also note the order independence!
+@requires(compile)
+@task
 def run():
 	'''Runs the project.'''
 	print 'run()'
 
-@task(run)
+# also note that @requires(...) and @task are redundant.
+@requires(run)
 def stop():
 	'''Stops the project.'''
+	require(run)
 	print 'stop()'
 
-@task(compile)
-def abort():
-	'''Raises an AbortException to fail the build.'''
-	print 'abort()'
-	raise AbortException('Aborted.')
 
-@task(abort)
+# inner requirement
+# might be useful when a task has yet to be defined,
+# although it prevents the requirements from showing
+# up in the help messages
+@task
 def bad():
 	'''A bad task.'''
+	require(aborter)
 	print 'bad()'
+
+# aborting tasks upon failure
+@task
+def aborter():
+	'''Raises an AbortException to fail the build.'''
+	abort("aborting...")
+	print 'abort()'
 
 if __name__ == '__main__':
 	main(sys.argv[1:])
