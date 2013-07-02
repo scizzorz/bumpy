@@ -2,7 +2,9 @@ import sys
 
 CONFIG = {
 	'color': True,
-	'color_tasks': 4,
+	'color_invalid': 4,
+	'color_success': 2,
+	'color_fail': 1,
 }
 
 LOCALE = {
@@ -37,27 +39,38 @@ class Task:
 		self.help = func.__doc__
 		self.requires = requires
 
-		self.valid = False
+		self.valid = None
 
 	def __call__(self, *args, **kwargs):
 		print LOCALE['execute'].format(self)
 		for req in self.requires:
-			if not req.valid:
-				print LOCALE['require'].format(req)
-				if req() == False:
-					print LOCALE['abort_bad_require'].format(self, req)
-					return False
+			if req.valid is None:
+				req()
+
+			if req.valid == False:
+				self.valid = False
+				print LOCALE['abort_bad_require'].format(self, req)
+				return False
 
 		try:
 			self.func(*args, **kwargs)
 		except AbortException, ex:
+			self.valid = False
 			print LOCALE['abort'].format(self, ex.message)
-			return False
+		else:
+			self.valid = True
 
-		self.valid = True
+		return self.valid
 
 	def __repr__(self):
-		return _highlight('[' + self.name + ']', CONFIG['color_tasks'])
+		color = CONFIG['color_invalid']
+
+		if self.valid:
+			color = CONFIG['color_success']
+		elif self.valid == False:
+			color = CONFIG['color_fail']
+
+		return _highlight('[' + self.name + ']', color)
 
 
 def task(*requires):
