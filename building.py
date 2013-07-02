@@ -88,38 +88,3 @@ def main(args):
 				DICT[arg]()
 			else:
 				print LOCALE['help_unknown'].format(arg)
-
-
-@task()
-def clean():
-	'''Cleans the project.'''
-	print 'clean()'
-
-@task()
-def compile():
-	'''Compiles the project.'''
-	print 'compile()'
-
-@task(requires=[compile])
-def run():
-	'''Runs the project.'''
-	print 'run()'
-
-@task(requires=[run])
-def stop():
-	'''Stops the project.'''
-	print 'stop()'
-
-@task(requires=[compile])
-def abort():
-	'''Raises an AbortException to fail the build.'''
-	print 'abort()'
-	raise AbortException('Aborted.')
-
-@task(requires=[abort])
-def bad():
-	'''A bad task.'''
-	print 'bad()'
-
-if __name__ == '__main__':
-	main(sys.argv[1:])
