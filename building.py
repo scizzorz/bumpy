@@ -10,6 +10,7 @@ CONFIG = {
 LOCALE = {
 	'execute_single': 'execute\t{}',
 	'execute_multi': 'execute\t{} - {}',
+	'finish': 'finish \t{}',
 	'abort': 'abort  \t{} - {}',
 	'abort_bad_require': 'abort  \t{} - {} require failed',
 	'help_command': '{} - {}',
@@ -62,6 +63,7 @@ class Task:
 			print LOCALE['abort'].format(self, ex.message)
 		else:
 			self.valid = True
+			print LOCALE['finish'].format(self)
 
 		return self.valid
 
