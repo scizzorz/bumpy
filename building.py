@@ -81,14 +81,13 @@ def task(func):
 		DICT[func.name] = func
 	return func
 
-def abort(message):
-	raise AbortException(message)
+def default(func):
+	global DEFAULT
 
-def shell(command):
-	try:
-		return subprocess.check_output(command, shell=True)
-	except subprocess.CalledProcessError, ex:
-		return ex
+	func = task(func)
+	DEFAULT = func
+
+	return func
 
 def requires(*requirements):
 	def wrapper(func):
@@ -97,6 +96,15 @@ def requires(*requirements):
 		return func
 
 	return wrapper
+
+def abort(message):
+	raise AbortException(message)
+
+def shell(command):
+	try:
+		return subprocess.check_output(command, shell=True)
+	except subprocess.CalledProcessError, ex:
+		return ex
 
 def require(*requirements):
 	for req in requirements:
@@ -118,14 +126,18 @@ def age(*paths):
 
 	return min([(time.time() - os.path.getmtime(path)) for path in paths])
 
+@default
+def help():
+	'''Print all available commands and descriptions.'''
+	for task in LIST:
+		print LOCALE['help_command'].format(task, task.help)
+
+		if task.requirements:
+			print LOCALE['help_requires'].format(task.reqstr())
+
 def main(args):
 	if len(args) == 0:
-		for task in LIST:
-			print LOCALE['help_command'].format(task, task.help)
-
-			if task.requirements:
-				print LOCALE['help_requires'].format(task.reqstr())
-
+		DEFAULT()
 	else:
 		for arg in args:
 			if arg in DICT:
