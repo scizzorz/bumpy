@@ -39,24 +39,25 @@ class Task:
 		self.name = func.__name__
 		self.help = func.__doc__
 
+		self.suppress = ()
 		self.requirements = ()
 		self.valid = None
 
 	def __call__(self, *args, **kwargs):
 		if self.requirements:
-			print LOCALE['execute_multi'].format(self, self.reqstr())
+			self.__print('execute_multi', self, self.reqstr())
 		else:
-			print LOCALE['execute_single'].format(self)
+			self.__print('execute_single', self)
 
 		try:
 			require(*self.requirements)
 			self.func(*args, **kwargs)
 		except AbortException, ex:
 			self.valid = False
-			print LOCALE['abort'].format(self, ex.message)
+			self.__print('abort', self, ex.message)
 		else:
 			self.valid = True
-			print LOCALE['finish'].format(self)
+			self.__print('finish', self)
 
 		return self.valid
 
@@ -69,6 +70,10 @@ class Task:
 			color = CONFIG['color_fail']
 
 		return _highlight('[' + self.name + ']', color)
+
+	def __print(self, id, *args):
+		if id not in self.suppress:
+			print LOCALE[id].format(*args)
 
 	def reqstr(self):
 		return ', '.join(x.__repr__() for x in self.requirements)
@@ -88,6 +93,14 @@ def default(func):
 	DEFAULT = func
 
 	return func
+
+def suppress(*messages):
+	def wrapper(func):
+		func = task(func)
+		func.suppress = messages
+		return func
+
+	return wrapper
 
 def requires(*requirements):
 	def wrapper(func):
@@ -127,6 +140,7 @@ def age(*paths):
 	return min([(time.time() - os.path.getmtime(path)) for path in paths])
 
 @default
+@suppress('execute_single', 'execute_multi', 'finish')
 def help():
 	'''Print all available commands and descriptions.'''
 	for task in LIST:
