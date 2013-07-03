@@ -29,11 +29,11 @@ def _highlight(string, color):
 		else:
 			return '\033[{color}m{string}\033[0m'.format(string = string, color = color+82)
 
-class AbortException(Exception):
+class _AbortException(Exception):
 	def __init__(self, message):
 		Exception.__init__(self, message)
 
-class Task:
+class _Task:
 	def __init__(self, func):
 		self.func = func
 		self.name = func.__name__
@@ -52,7 +52,7 @@ class Task:
 		try:
 			require(*self.requirements)
 			self.func(*args, **kwargs)
-		except AbortException, ex:
+		except _AbortException, ex:
 			self.valid = False
 			self.__print('abort', self, ex.message)
 		else:
@@ -80,8 +80,8 @@ class Task:
 
 
 def task(func):
-	if not isinstance(func, Task):
-		func = Task(func)
+	if not isinstance(func, _Task):
+		func = _Task(func)
 		LIST.append(func)
 		DICT[func.name] = func
 	return func
@@ -111,7 +111,7 @@ def requires(*requirements):
 	return wrapper
 
 def abort(message):
-	raise AbortException(message)
+	raise _AbortException(message)
 
 def shell(command):
 	try:
