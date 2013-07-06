@@ -10,29 +10,37 @@ Bumpy is derived from [pynt](https://github.com/rags/pynt), and by extension, [m
 
 Bumpy is simple to use. Just import it, define your tasks, and call `main()` at the end (*FIXME* still too complicated).
 
-	import sys, bumpy
-	from bumpy import task, main
+```python
+import sys, bumpy
+from bumpy import task, main
 
-	@task
-	def compile():
-		'''Compiles all the code.'''
-		print 'Running...'
+@task
+def compile():
+	'''Compiles all the code.'''
+	print 'Running...'
 
-	if __name__ == '__main__':
-		main(sys.argv[1:])
+if __name__ == '__main__':
+	main(sys.argv[1:])
+```
 
 And that's it. You can run the code like this:
 
-	$ python build.py compile
+```bash
+$ python build.py compile
+execute [compile]
+Compiling...
+finish [compile]
+```
 
 Although I prefer to make the file executable and ditch the `.py` extension:
 
-	$ build compile
+```bash
+$ build compile
+```
 
 ### Moar
 
-://github.com/CalumJEadie/microbuild
-Bumpy uses several Python decorators to record and manipulate your tasks. Bumpy also includes several helper functions to minimize the code you need to write while still providing maximal functionality.
+Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also includes several helper functions to minimize the code you need to write while still providing maximal functionality.
 
 #### Decorators
 
