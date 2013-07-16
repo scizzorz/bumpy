@@ -44,7 +44,7 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 
 #### Decorators
 
-* `@task` registers the decorated function as a task. The function name will be used at the command line to invoke this task, and the function's docstring will be displayed when the `help` command is called. All decorators will invoke `@task` if necessary, so if you are using the advanced decorators you don't need to use this.
+* `@task` (also `@command` and `@cmd`) registers the decorated function as a task. The function name will be used at the command line to invoke this task, and the function's docstring will be displayed when the `help` command is called. All decorators will invoke `@task` if necessary, so if you are using the advanced decorators you don't need to use this.
 * `@default` marks the decorated function as the "default" task - the task that should be run when no arguments are given to Bumpy.
 * `@requires(*requirements)` specifies that this task requires certain things before it can be run. The requirements can either be a filename (as a string) or another Bumpy task: `@requires("file.txt")` or `@requires(compile)`. Any missing files will cause Bumpy to abort this task. Any required tasks will be executed before executing this task, and failures will prevent this task from being executed. If a task is required multiple times it will only be executed once.
 * `@suppress(*messages)` prevents Bumpy from displaying its own output when executing this task. Acceptable messages to suppress:
@@ -59,7 +59,8 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 
 * `abort(message)` will raise an exception and abort the current task, printing an error message as output and preventing any dependent tasks from executing
 * `shell(command)` will pass the command into the user's shell, returning the command's output or any raised exceptions
-* `require(*requirements)` is similar to the `@requires(...)` decorator, although it can be called in the middle of a task rather than at the beginning. It can be used to verify that a certain file was produced or to require a different task depending on a variable.
+* `require(*requirements)` is similar to the `@requires(...)` decorator, although it can be called in the middle of a task rather than at the beginning. It can be used to verify that a certain file was produced or to require a different task depending on a condition.
 * `age(*paths)` returns the *minimum* age of any file in `*paths`. If none of the given files exist, the current Unix timestamp is returned. This means that missing files are always interpreted as older than existing files.
+* `valid(*things)` checks whether all of the `things` are "valid", ie if they were required, they would pass
 
 ## To be continued

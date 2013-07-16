@@ -131,6 +131,13 @@ def require(*requirements):
 			if req.valid == False:
 				abort(LOCALE['abort_bad_task'].format(req))
 
+def valid(*things):
+	for thing in things:
+		if type(thing) is str:
+			return os.path.exists(thing)
+		else:
+			return req.valid
+
 def shell(command):
 	try:
 		return subprocess.check_output(command, shell=True)
