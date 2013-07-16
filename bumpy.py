@@ -118,6 +118,7 @@ def requires(*requirements):
 def abort(message):
 	raise _AbortException(message)
 
+
 # bumpy helpers
 def require(*requirements):
 	for req in requirements:
@@ -151,6 +152,7 @@ def age(*paths):
 
 	return min([(time.time() - os.path.getmtime(path)) for path in paths])
 
+
 # bumpy help
 @default
 @suppress('execute_single', 'execute_multi', 'finish')
@@ -168,18 +170,49 @@ def list():
 	print ', '.join(task.__repr__() for task in LIST)
 
 
+# bumpy
+def config(**kwargs):
+	for key in kwargs:
+		CONFIG[key] = kwargs[key]
+
+def get_task(name):
+	if name in DICT:
+		return DICT[name]
+	else:
+		matches = [task for task in LIST if task.name.startswith(name)]
+		if not matches:
+			print LOCALE['help_unknown'].format(name)
+			return
+		elif len(matches) != 1:
+			print LOCALE['help_conflict'].format(name, [matches])
+			return
+		else:
+			return matches[0]
+
 def main(args):
 	if len(args) == 0:
 		DEFAULT()
 	else:
-		for arg in args:
-			if arg in DICT:
-				DICT[arg]()
-			else:
-				matches = [task for task in LIST if task.name.startswith(arg)]
-				if not matches:
-					print LOCALE['help_unknown'].format(arg)
-				elif len(matches) != 1:
-					print LOCALE['help_conflict'].format(arg, [matches])
+		if CONFIG['cli']:
+			print "bumpy-cli enabled"
+			temp = get_task(args[0])
+			i = 1
+			nargs = []
+			kwargs = {}
+
+			while i < len(args):
+				if args[i].startswith('--'):
+					kwargs[args[i][2:]] = args[i+1]
+					i += 2
 				else:
-					matches[0]()
+					nargs.append(args[i])
+					i += 1
+
+			if temp is not None:
+				temp(*nargs, **kwargs)
+
+		else:
+			for arg in args:
+				temp = get_task(arg)
+				if temp is not None:
+					temp()
