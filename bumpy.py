@@ -5,6 +5,9 @@ CONFIG = {
 	'color_invalid': 4,
 	'color_success': 2,
 	'color_fail': 1,
+
+	'cli': False,
+	'abbrev': True,
 }
 
 LOCALE = {
@@ -17,7 +20,6 @@ LOCALE = {
 	'help_command': '{} - {}',
 	'help_requires': '\trequires {}',
 	'help_unknown': 'unknown task: {}',
-	'help_conflict': 'abbreviation {} conflicts with {}',
 }
 
 LIST = []
@@ -178,27 +180,24 @@ def config(**kwargs):
 def get_task(name):
 	if name in DICT:
 		return DICT[name]
-	else:
+	elif CONFIG['abbrev']:
 		matches = [task for task in LIST if task.name.startswith(name)]
-		if not matches:
-			print LOCALE['help_unknown'].format(name)
-			return
-		elif len(matches) != 1:
-			print LOCALE['help_conflict'].format(name, [matches])
-			return
-		else:
+		if matches:
 			return matches[0]
+
 
 def main(args):
 	if len(args) == 0:
 		DEFAULT()
 	else:
 		if CONFIG['cli']:
-			print "bumpy-cli enabled"
 			temp = get_task(args[0])
 			i = 1
 			nargs = []
 			kwargs = {}
+
+			if temp is None:
+				i = 0
 
 			while i < len(args):
 				if args[i].startswith('--'):
@@ -208,11 +207,19 @@ def main(args):
 					nargs.append(args[i])
 					i += 1
 
-			if temp is not None:
+			if temp is None:
+				temp = DEFAULT
+
+			try:
 				temp(*nargs, **kwargs)
+			except Exception, ex:
+				temp.valid = False
+				print LOCALE['abort'].format(temp, ex.message)
 
 		else:
 			for arg in args:
 				temp = get_task(arg)
 				if temp is not None:
 					temp()
+				else:
+					print LOCALE['help_unknown'].format(name)
