@@ -85,6 +85,8 @@ def task(func):
 		LIST.append(func)
 		DICT[func.name] = func
 	return func
+command = task
+cmd = task
 
 def default(func):
 	global DEFAULT

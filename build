@@ -34,11 +34,12 @@ def stop():
 	print 'stop()'
 
 
-# inner requirement
+# @command and @cmd are aliases for @task
+# also, an inner requirement
 # might be useful when a task has yet to be defined,
 # although it prevents the requirements from showing
 # up in the help messages
-@task
+@command
 def bad():
 	'''A bad task.'''
 	require(aborter)
