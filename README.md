@@ -48,6 +48,7 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 * `@default` marks the decorated function as the "default" task - the task that should be run when no arguments are given to Bumpy.
 * `@requires(*requirements)` specifies that this task requires certain things before it can be run. The requirements can either be a filename (as a string) or another Bumpy task: `@requires("file.txt")` or `@requires(compile)`. Any missing files will cause Bumpy to abort this task. Any required tasks will be executed before executing this task, and failures will prevent this task from being executed. If a task is required multiple times it will only be executed once.
 * `@suppress(*messages)` prevents Bumpy from displaying its own output when executing this task. Acceptable messages to suppress:
+  * `all` - everything will be suppressed
   * `execute_single` - displayed when a task with no requirements is executed
   * `execute_multi` - displayed when a task with requirements is executed; includes requirements list
   * `finish` - displayed when a task finishes

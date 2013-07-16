@@ -74,7 +74,7 @@ class _Task:
 		return _highlight('[' + self.name + ']', color)
 
 	def __print(self, id, *args):
-		if id not in self.suppress:
+		if ('all' not in self.suppress) and (id not in self.suppress):
 			print LOCALE[id].format(*args)
 
 	def reqstr(self):
