@@ -29,6 +29,7 @@ def _highlight(string, color):
 		else:
 			return '\033[{color}m{string}\033[0m'.format(string = string, color = color+82)
 
+# bumpy classes
 class _AbortException(Exception):
 	def __init__(self, message):
 		Exception.__init__(self, message)
@@ -79,6 +80,7 @@ class _Task:
 		return ', '.join(x.__repr__() for x in self.requirements)
 
 
+# bumpy decorators
 def task(func):
 	if not isinstance(func, _Task):
 		func = _Task(func)
@@ -115,12 +117,7 @@ def requires(*requirements):
 def abort(message):
 	raise _AbortException(message)
 
-def shell(command):
-	try:
-		return subprocess.check_output(command, shell=True)
-	except subprocess.CalledProcessError, ex:
-		return ex
-
+# bumpy helpers
 def require(*requirements):
 	for req in requirements:
 		if type(req) is str:
@@ -133,6 +130,11 @@ def require(*requirements):
 			if req.valid == False:
 				abort(LOCALE['abort_bad_task'].format(req))
 
+def shell(command):
+	try:
+		return subprocess.check_output(command, shell=True)
+	except subprocess.CalledProcessError, ex:
+		return ex
 
 def age(*paths):
 	for path in paths:
@@ -141,6 +143,7 @@ def age(*paths):
 
 	return min([(time.time() - os.path.getmtime(path)) for path in paths])
 
+# bumpy help
 @default
 @suppress('execute_single', 'execute_multi', 'finish')
 def help():
@@ -150,6 +153,12 @@ def help():
 
 		if task.requirements:
 			print LOCALE['help_requires'].format(task.reqstr())
+
+@task
+def list():
+	'''Print a list of all available tasks.'''
+	print ', '.join(task.__repr__() for task in LIST)
+
 
 def main(args):
 	if len(args) == 0:
