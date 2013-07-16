@@ -16,7 +16,8 @@ LOCALE = {
 	'abort_bad_file': "required file '{}' does not exist",
 	'help_command': '{} - {}',
 	'help_requires': '\trequires {}',
-	'help_unknown': 'unknown command: {}',
+	'help_unknown': 'unknown task: {}',
+	'help_conflict': 'abbreviation {} conflicts with {}',
 }
 
 LIST = []
@@ -147,7 +148,7 @@ def age(*paths):
 @default
 @suppress('execute_single', 'execute_multi', 'finish')
 def help():
-	'''Print all available commands and descriptions.'''
+	'''Print all available tasks and descriptions.'''
 	for task in LIST:
 		print LOCALE['help_command'].format(task, task.help)
 
@@ -168,4 +169,10 @@ def main(args):
 			if arg in DICT:
 				DICT[arg]()
 			else:
-				print LOCALE['help_unknown'].format(arg)
+				matches = [task for task in LIST if task.name.startswith(arg)]
+				if not matches:
+					print LOCALE['help_unknown'].format(arg)
+				elif len(matches) != 1:
+					print LOCALE['help_conflict'].format(arg, [matches])
+				else:
+					matches[0]()
