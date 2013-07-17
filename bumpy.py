@@ -222,4 +222,4 @@ def main(args):
 				if temp is not None:
 					temp()
 				else:
-					print LOCALE['help_unknown'].format(name)
+					print LOCALE['help_unknown'].format(arg)
