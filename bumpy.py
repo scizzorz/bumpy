@@ -43,6 +43,7 @@ class _Task:
 		self.name = func.__name__
 		self.help = func.__doc__
 
+		self.aliases = ()
 		self.suppress = ()
 		self.requirements = ()
 		self.valid = None
@@ -78,6 +79,14 @@ class _Task:
 	def __print(self, id, *args):
 		if ('all' not in self.suppress) and (id not in self.suppress):
 			print LOCALE[id].format(*args)
+
+	def match(self, name):
+		if self.name.startswith(name):
+			return True
+
+		for alias in self.aliases:
+			if alias.startswith(name):
+				return True
 
 	def reqstr(self):
 		return ', '.join(x.__repr__() for x in self.requirements)
@@ -148,8 +157,19 @@ def requires(*requirements):
 
 	return wrapper
 
-def abort(message):
-	raise _AbortException(message)
+def alias(*aliases):
+	def wrapper(func):
+		global DICT
+
+		func = task(func)
+		func.aliases = aliases
+
+		for alias in aliases:
+			DICT[alias] = func
+
+		return func
+
+	return wrapper
 
 
 # bumpy helpers
@@ -185,6 +205,10 @@ def age(*paths):
 
 	return min([(time.time() - os.path.getmtime(path)) for path in paths])
 
+def abort(message):
+	raise _AbortException(message)
+
+
 
 # bumpy help
 @default
@@ -203,10 +227,12 @@ def config(**kwargs):
 		CONFIG[key] = kwargs[key]
 
 def get_task(name):
+	global LIST, DICT
+
 	if name in DICT:
 		return DICT[name]
 	elif CONFIG['abbrev']:
-		matches = [task for task in LIST if task.name.startswith(name)]
+		matches = [task for task in LIST if task.match(name)]
 		if matches:
 			return matches[0]
 
