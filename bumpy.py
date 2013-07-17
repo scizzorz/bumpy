@@ -166,12 +166,6 @@ def help():
 		if task.requirements:
 			print LOCALE['help_requires'].format(task.reqstr())
 
-@task
-def list():
-	'''Print a list of all available tasks.'''
-	print ', '.join(task.__repr__() for task in LIST)
-
-
 # bumpy
 def config(**kwargs):
 	for key in kwargs:
