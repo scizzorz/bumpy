@@ -101,6 +101,22 @@ def default(func):
 
 	return func
 
+def setup(func):
+	global SETUP
+
+	func = task(func)
+	SETUP = func
+
+	return func
+
+def teardown(func):
+	global TEARDOWN
+
+	func = task(func)
+	TEARDOWN = func
+
+	return func
+
 def suppress(*messages):
 	def wrapper(func):
 		func = task(func)
@@ -181,6 +197,8 @@ def get_task(name):
 
 
 def main(args):
+	SETUP()
+
 	if len(args) == 0:
 		DEFAULT()
 	else:
@@ -217,3 +235,5 @@ def main(args):
 					temp()
 				else:
 					print LOCALE['help_unknown'].format(arg)
+
+	TEARDOWN()
