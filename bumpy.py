@@ -24,6 +24,9 @@ LOCALE = {
 
 LIST = []
 DICT = {}
+DEFAULT = None
+SETUP = None
+TEARDOWN = None
 
 def _highlight(string, color):
 	if CONFIG['color']:
@@ -209,7 +212,6 @@ def abort(message):
 	raise _AbortException(message)
 
 
-
 # bumpy help
 @default
 @suppress('execute_single', 'execute_multi', 'finish')
@@ -238,9 +240,10 @@ def get_task(name):
 
 
 def main(args):
-	SETUP()
+	if SETUP:
+		SETUP()
 
-	if len(args) == 0:
+	if not args and DEFAULT:
 		DEFAULT()
 	else:
 		if CONFIG['cli']:
@@ -260,7 +263,7 @@ def main(args):
 					nargs.append(args[i])
 					i += 1
 
-			if temp is None:
+			if not temp and DEFAULT:
 				temp = DEFAULT
 
 			try:
@@ -277,4 +280,5 @@ def main(args):
 				else:
 					print LOCALE['help_unknown'].format(arg)
 
-	TEARDOWN()
+	if TEARDOWN:
+		TEARDOWN()
