@@ -8,7 +8,7 @@ CONFIG = {
 
 	'cli': False,
 	'abbrev': True,
-}
+	}
 
 LOCALE = {
 	'execute_single': 'execute\t{}',
@@ -20,7 +20,7 @@ LOCALE = {
 	'help_command': '{} - {}',
 	'help_requires': '\trequires {}',
 	'help_unknown': 'unknown task: {}',
-}
+	}
 
 LIST = []
 DICT = {}
@@ -85,6 +85,8 @@ class _Task:
 
 # bumpy decorators
 def task(func):
+	global LIST, DICT
+
 	if not isinstance(func, _Task):
 		func = _Task(func)
 		LIST.append(func)
@@ -114,6 +116,19 @@ def teardown(func):
 
 	func = task(func)
 	TEARDOWN = func
+
+	return func
+
+def private(func):
+	global LIST, DICT
+
+	func = task(func)
+
+	if func in LIST:
+		LIST.remove(func)
+
+	if func.name in DICT:
+		del DICT[func.name]
 
 	return func
 
