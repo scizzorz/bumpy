@@ -19,7 +19,8 @@ LOCALE = {
 	'abort_bad_task': 'required task {} failed',
 	'abort_bad_file': "required file '{}' does not exist",
 	'help_command': '{}{} - {}',
-	'help_requires': '\trequires {}',
+	'help_aliases': '\taliases: {}',
+	'help_requires': '\trequires: {}',
 	'help_unknown': 'unknown task: {}',
 	}
 
@@ -36,7 +37,6 @@ def _highlight(string, color):
 		else:
 			return '\033[{color}m{string}\033[0m'.format(string = string, color = color+82)
 
-# bumpy classes
 class _AbortException(Exception):
 	def __init__(self, message):
 		Exception.__init__(self, message)
@@ -94,6 +94,9 @@ class _Task:
 
 	def reqstr(self):
 		return ', '.join(x.__repr__() for x in self.requirements)
+
+	def aliasstr(self):
+		return ', '.join(x.__repr__() for x in self.aliases)
 
 
 # bumpy decorators
@@ -229,8 +232,11 @@ def help():
 
 		print LOCALE['help_command'].format(task, tags, task.help)
 
+		if task.aliases:
+			print LOCALE['help_aliases'].format(task.aliasstr())
 		if task.requirements:
 			print LOCALE['help_requires'].format(task.reqstr())
+
 
 # bumpy
 def config(**kwargs):
@@ -246,7 +252,6 @@ def get_task(name):
 		matches = [task for task in LIST if task.match(name)]
 		if matches:
 			return matches[0]
-
 
 def main(args):
 	if SETUP:
