@@ -18,7 +18,7 @@ LOCALE = {
 	'abort': 'abort  \t{} - {}',
 	'abort_bad_task': 'required task {} failed',
 	'abort_bad_file': "required file '{}' does not exist",
-	'help_command': '{} - {}',
+	'help_command': '{}{} - {}',
 	'help_requires': '\trequires {}',
 	'help_unknown': 'unknown task: {}',
 	}
@@ -219,7 +219,15 @@ def abort(message):
 def help():
 	'''Print all available tasks and descriptions.'''
 	for task in LIST:
-		print LOCALE['help_command'].format(task, task.help)
+		tags = ''
+		if task is DEFAULT:
+			tags += '*'
+		if task is SETUP:
+			tags += '+'
+		if task is TEARDOWN:
+			tags += '-'
+
+		print LOCALE['help_command'].format(task, tags, task.help)
 
 		if task.requirements:
 			print LOCALE['help_requires'].format(task.reqstr())
