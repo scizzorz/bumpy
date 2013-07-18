@@ -8,6 +8,7 @@ CONFIG = {
 
 	'cli': False,
 	'abbrev': True,
+	'suppress': (),
 	}
 
 LOCALE = {
@@ -80,7 +81,7 @@ class _Task:
 		return _highlight('[' + self.name + ']', color)
 
 	def __print(self, id, *args):
-		if ('all' not in self.suppress) and (id not in self.suppress):
+		if ('all' not in self.suppress) and (id not in self.suppress) and ('all' not in CONFIG['suppress']) and (id not in CONFIG['suppress']):
 			print LOCALE[id].format(*args)
 
 	def match(self, name):
