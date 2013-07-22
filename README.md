@@ -41,6 +41,7 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 * `@private` hides the task from the `help` task. Can be used to hide the setup and teardown tasks or to create tasks that can act as requirements but can't be called manually.
 * `@requires(...)` specifies that this task requires certain things before it can be run. The requirements can either be a filename (as a string) or another bumpy task: `@requires("file.txt")` or `@requires(compile)`. Any missing files will cause bumpy to abort this task. Any required tasks will be executed before executing this task, and failures will prevent this task from being executed. If a task is required multiple times it will only be executed once.
 * `@alias(...)` allows the task to be called from names other than its declared function name
+* `@generates(...)` tracks a list of files created by this task that can be automatically deleted by calling `clean()`
 * `@suppress(...)` prevents bumpy from displaying its own output when executing this task. Acceptable messages to suppress:
   * `all` - everything will be suppressed
   * `execute_single` - displayed when a task with no requirements is executed
@@ -57,5 +58,6 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 * `require(*requirements)` is similar to the `@requires(...)` decorator, although it can be called in the middle of a task rather than at the beginning. It can be used to verify that a certain file was produced or to require a different task depending on a condition.
 * `age(*paths)` returns the *minimum* age of any file in `*paths`. If none of the given files exist, the current Unix timestamp is returned. This means that missing files are always interpreted as older than existing files.
 * `valid(*things)` checks whether all of the `things` are "valid", ie if they were required, they would pass
+* `clean()` erases any files that have been added by a `@generates(...)` decorator
 
 ## To be continued

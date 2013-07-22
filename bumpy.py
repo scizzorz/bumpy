@@ -26,6 +26,7 @@ LOCALE = {
 
 LIST = []
 DICT = {}
+GENERATES = []
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
@@ -178,6 +179,15 @@ def alias(*aliases):
 
 	return wrapper
 
+def generates(*files):
+	def wrapper(func):
+		global GENERATES
+		func = task(func)
+		GENERATES += list(files)
+		return func
+
+	return wrapper
+
 
 # bumpy helpers
 def require(*requirements):
@@ -211,6 +221,10 @@ def age(*paths):
 			return time.time()
 
 	return min([(time.time() - os.path.getmtime(path)) for path in paths])
+
+def clean():
+	global GENERATES
+	shell('rm ' + ' '.join(GENERATES))
 
 def abort(message):
 	raise _AbortException(message)
