@@ -8,34 +8,24 @@ Bumpy is derived from [pynt](https://github.com/rags/pynt), and by extension, [m
 
 ## Usage
 
-Bumpy is simple to use. Just import it, define your tasks, and call `main()` at the end (*FIXME* still too complicated).
+Bumpy is simple to use. Just import it, define your tasks, and run `bumpy` in the same directory (*FIXME* gotta get this uploaded to PyPI, but in the meantime you have to add the `bin` to your `$PATH`).
 
 ```python
-import sys, bumpy
-from bumpy import task, main
+import bumpy
 
-@task
+@bumpy.task
 def compile():
 	'''Compiles all the code.'''
 	print 'Running...'
-
-if __name__ == '__main__':
-	main(sys.argv[1:])
 ```
 
 And that's it. You can run the code like this:
 
 ```bash
-$ python build.py compile
+$ bumpy compile
 execute [compile]
 Compiling...
 finish [compile]
-```
-
-Although I prefer to make the file executable and ditch the `.py` extension:
-
-```bash
-$ build compile
 ```
 
 ### Moar
