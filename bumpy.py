@@ -22,6 +22,7 @@ LOCALE = {
 	'help_aliases': '\taliases: {}',
 	'help_requires': '\trequires: {}',
 	'help_unknown': 'unknown task: {}',
+	'shell': '$ {}',
 	}
 
 LIST = []
@@ -210,6 +211,10 @@ def valid(*things):
 			return req.valid
 
 def shell(command):
+	global CONFIG
+	if 'shell' not in CONFIG['suppress']:
+		print LOCALE['shell'].format(command)
+
 	try:
 		return subprocess.check_output(command, shell=True)
 	except subprocess.CalledProcessError, ex:
