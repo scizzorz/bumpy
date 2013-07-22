@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+import os, imp, sys
+import bumpy
+
+def inc(filename):
+	if os.path.exists(filename):
+		return imp.load_source('build', filename)
+
+if __name__ == '__main__':
+	module = inc('bum.py') or inc('bumpy') or inc('build.py') or inc('build')
+	if not module:
+		print 'Unable to find a proper bumpy build file.'
+	else:
+		bumpy.main(sys.argv[1:])
