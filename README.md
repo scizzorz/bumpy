@@ -8,7 +8,7 @@ Bumpy is derived from [pynt](https://github.com/rags/pynt), and by extension, [m
 
 ## Usage
 
-Bumpy is simple to use. Just import it, define your tasks, and run `bumpy` in the same directory (*FIXME* gotta get this uploaded to PyPI, but in the meantime you have to add the `bin` to your `$PATH`).
+Bumpy is simple to use. Just import it, define your tasks, and run `bumpy` in the same directory.
 
 ```python
 import bumpy
