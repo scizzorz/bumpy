@@ -1,4 +1,4 @@
-import sys, subprocess, os, time
+import os, getopt, subprocess, sys, os
 
 CONFIG = {
 	'color': True,
@@ -9,6 +9,8 @@ CONFIG = {
 	'cli': False,
 	'abbrev': True,
 	'suppress': (),
+	'options': '',
+	'long_options': [],
 	}
 
 LOCALE = {
@@ -31,6 +33,7 @@ GENERATES = []
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
+OPTIONS = None
 
 def _highlight(string, color):
 	if CONFIG['color']:
@@ -134,8 +137,17 @@ def teardown(func):
 
 	func = task(func)
 	TEARDOWN = func
-
 	return func
+
+def options(func):
+	global OPTIONS
+
+	func = task(func)
+	OPTIONS = func
+	return func
+
+# TODO
+# def args(func):
 
 def private(func):
 	global LIST, DICT
@@ -280,27 +292,18 @@ def main(args):
 		DEFAULT()
 	else:
 		if CONFIG['cli']:
+			# bumpy options
+			if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
+				opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
+				OPTIONS(*opts)
+
 			temp = get_task(args[0])
-			i = 1
-			nargs = []
-			kwargs = {}
-
-			if temp is None:
-				i = 0
-
-			while i < len(args):
-				if args[i].startswith('--'):
-					kwargs[args[i][2:]] = args[i+1]
-					i += 2
-				else:
-					nargs.append(args[i])
-					i += 1
 
 			if not temp and DEFAULT:
 				temp = DEFAULT
 
 			try:
-				temp(*nargs, **kwargs)
+				temp()
 			except Exception, ex:
 				temp.valid = False
 				print LOCALE['abort'].format(temp, ex.message)
