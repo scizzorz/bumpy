@@ -1,4 +1,4 @@
-import sys, subprocess, os, time
+import os, getopt, subprocess, sys, os
 
 CONFIG = {
 	'color': True,
@@ -9,6 +9,8 @@ CONFIG = {
 	'cli': False,
 	'abbrev': True,
 	'suppress': (),
+	'options': '',
+	'long_options': [],
 	}
 
 LOCALE = {
@@ -31,6 +33,7 @@ GENERATES = []
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
+OPTIONS = None
 
 def _highlight(string, color):
 	if CONFIG['color']:
@@ -51,6 +54,8 @@ class _Task:
 
 		self.aliases = ()
 		self.suppress = ()
+		self.args = []
+		self.defaults = {}
 		self.requirements = ()
 		self.valid = None
 
@@ -110,15 +115,12 @@ def task(func):
 		LIST.append(func)
 		DICT[func.name] = func
 	return func
-command = task
-cmd = task
 
 def default(func):
 	global DEFAULT
 
 	func = task(func)
 	DEFAULT = func
-
 	return func
 
 def setup(func):
@@ -126,7 +128,6 @@ def setup(func):
 
 	func = task(func)
 	SETUP = func
-
 	return func
 
 def teardown(func):
@@ -134,7 +135,13 @@ def teardown(func):
 
 	func = task(func)
 	TEARDOWN = func
+	return func
 
+def options(func):
+	global OPTIONS
+
+	func = task(func)
+	OPTIONS = func
 	return func
 
 def private(func):
@@ -176,6 +183,15 @@ def alias(*aliases):
 		for alias in aliases:
 			DICT[alias] = func
 
+		return func
+
+	return wrapper
+
+def args(**opts):
+	def wrapper(func):
+		func = task(func)
+		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
+		func.defaults = opts
 		return func
 
 	return wrapper
@@ -272,6 +288,15 @@ def get_task(name):
 		if matches:
 			return matches[0]
 
+def opts_to_dict(*opts):
+	ret = {}
+	for key, val in opts:
+		if key[:2] == '--': key = key[2:]
+		elif key[:1] == '-': key = key[1:]
+		if val == '': val = True
+		ret[key] = val
+	return ret
+
 def main(args):
 	if SETUP:
 		SETUP()
@@ -280,27 +305,31 @@ def main(args):
 		DEFAULT()
 	else:
 		if CONFIG['cli']:
-			temp = get_task(args[0])
-			i = 1
-			nargs = []
-			kwargs = {}
+			# bumpy options
+			if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
+				opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
+				opts = opts_to_dict(*opts)
+				OPTIONS(**opts)
 
-			if temp is None:
-				i = 0
-
-			while i < len(args):
-				if args[i].startswith('--'):
-					kwargs[args[i][2:]] = args[i+1]
-					i += 2
-				else:
-					nargs.append(args[i])
-					i += 1
+			# get current task
+			temp = None
+			if len(args) > 0:
+				temp = get_task(args[0])
+				if temp:
+					args = args[1:]
 
 			if not temp and DEFAULT:
 				temp = DEFAULT
 
+			kwargs = temp.defaults
+			if temp.args:
+				temp_kwargs, args = getopt.getopt(args, '', temp.args)
+				temp_kwargs = opts_to_dict(*temp_kwargs)
+				for key in temp_kwargs:
+					kwargs[key] = temp_kwargs[key]
+
 			try:
-				temp(*nargs, **kwargs)
+				temp(*args, **kwargs)
 			except Exception, ex:
 				temp.valid = False
 				print LOCALE['abort'].format(temp, ex.message)
