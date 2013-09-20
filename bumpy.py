@@ -298,6 +298,11 @@ def opts_to_dict(*opts):
 	return ret
 
 def main(args):
+	if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
+		opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
+		opts = opts_to_dict(*opts)
+		OPTIONS(**opts)
+
 	if SETUP:
 		SETUP()
 
@@ -305,13 +310,6 @@ def main(args):
 		DEFAULT()
 	else:
 		if CONFIG['cli']:
-			# bumpy options
-			if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
-				opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
-				opts = opts_to_dict(*opts)
-				OPTIONS(**opts)
-
-			# get current task
 			temp = None
 			if len(args) > 0:
 				temp = get_task(args[0])
