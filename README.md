@@ -34,11 +34,12 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 
 #### Decorators
 
-* `@task` (also `@command` and `@cmd`) registers the decorated function as a task. The function name will be used at the command line to invoke this task, and the function's docstring will be displayed when the `help` command is called. All other decorators will invoke `@task` if necessary, so if you are using the advanced decorators you don't need to use this.
+* `@task` registers the decorated function as a task. The function name will be used at the command line to invoke this task, and the function's docstring will be displayed when the `help` command is called. All other decorators will invoke `@task` if necessary, so if you are using the advanced decorators you don't need to use this.
 * `@default` marks the decorated function as the "default" task. The "default" task will be run when no other arguments are given to bumpy.
 * `@setup` identifies a task as the "setup" task. The "setup" task will be run immediately, before any other bumpy processing has started.
 * `@teardown` identifies a task as the "teardown" task. The "teardown" task will be run just prior to exiting, after all other bumpy processing has completed.
 * `@private` hides the task from the `help` task. Can be used to hide the setup and teardown tasks or to create tasks that can act as requirements but can't be called manually.
+* `@args(...)` specifies which arguments this task should accept from the command line. A task *must accept* `**kwargs` in order to receive these options.
 * `@requires(...)` specifies that this task requires certain things before it can be run. The requirements can either be a filename (as a string) or another bumpy task: `@requires("file.txt")` or `@requires(compile)`. Any missing files will cause bumpy to abort this task. Any required tasks will be executed before executing this task, and failures will prevent this task from being executed. If a task is required multiple times it will only be executed once.
 * `@alias(...)` allows the task to be called from names other than its declared function name
 * `@generates(...)` tracks a list of files created by this task that can be automatically deleted by calling `clean()`
@@ -59,5 +60,3 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 * `age(*paths)` returns the *minimum* age of any file in `*paths`. If none of the given files exist, the current Unix timestamp is returned. This means that missing files are always interpreted as older than existing files.
 * `valid(*things)` checks whether all of the `things` are "valid", ie if they were required, they would pass
 * `clean()` erases any files that have been added by a `@generates(...)` decorator
-
-## To be continued
