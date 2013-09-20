@@ -54,6 +54,8 @@ class _Task:
 
 		self.aliases = ()
 		self.suppress = ()
+		self.args = []
+		self.defaults = {}
 		self.requirements = ()
 		self.valid = None
 
@@ -113,15 +115,12 @@ def task(func):
 		LIST.append(func)
 		DICT[func.name] = func
 	return func
-command = task
-cmd = task
 
 def default(func):
 	global DEFAULT
 
 	func = task(func)
 	DEFAULT = func
-
 	return func
 
 def setup(func):
@@ -129,7 +128,6 @@ def setup(func):
 
 	func = task(func)
 	SETUP = func
-
 	return func
 
 def teardown(func):
@@ -145,9 +143,6 @@ def options(func):
 	func = task(func)
 	OPTIONS = func
 	return func
-
-# TODO
-# def args(func):
 
 def private(func):
 	global LIST, DICT
@@ -188,6 +183,15 @@ def alias(*aliases):
 		for alias in aliases:
 			DICT[alias] = func
 
+		return func
+
+	return wrapper
+
+def args(**opts):
+	def wrapper(func):
+		func = task(func)
+		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
+		func.defaults = opts
 		return func
 
 	return wrapper
@@ -284,6 +288,15 @@ def get_task(name):
 		if matches:
 			return matches[0]
 
+def opts_to_dict(*opts):
+	ret = {}
+	for key, val in opts:
+		if key[:2] == '--': key = key[2:]
+		elif key[:1] == '-': key = key[1:]
+		if val == '': val = True
+		ret[key] = val
+	return ret
+
 def main(args):
 	if SETUP:
 		SETUP()
@@ -295,15 +308,28 @@ def main(args):
 			# bumpy options
 			if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
 				opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
-				OPTIONS(*opts)
+				opts = opts_to_dict(*opts)
+				OPTIONS(**opts)
 
-			temp = get_task(args[0])
+			# get current task
+			temp = None
+			if len(args) > 0:
+				temp = get_task(args[0])
+				if temp:
+					args = args[1:]
 
 			if not temp and DEFAULT:
 				temp = DEFAULT
 
+			kwargs = temp.defaults
+			if temp.args:
+				temp_kwargs, args = getopt.getopt(args, '', temp.args)
+				temp_kwargs = opts_to_dict(*temp_kwargs)
+				for key in temp_kwargs:
+					kwargs[key] = temp_kwargs[key]
+
 			try:
-				temp()
+				temp(*args, **kwargs)
 			except Exception, ex:
 				temp.valid = False
 				print LOCALE['abort'].format(temp, ex.message)
