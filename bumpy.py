@@ -57,6 +57,7 @@ class _Task:
 		self.args = []
 		self.defaults = {}
 		self.requirements = ()
+		self.generates = ()
 		self.valid = None
 
 	def __call__(self, *args, **kwargs):
@@ -176,13 +177,10 @@ def requires(*requirements):
 def alias(*aliases):
 	def wrapper(func):
 		global DICT
-
 		func = task(func)
 		func.aliases = aliases
-
 		for alias in aliases:
 			DICT[alias] = func
-
 		return func
 
 	return wrapper
@@ -200,6 +198,7 @@ def generates(*files):
 	def wrapper(func):
 		global GENERATES
 		func = task(func)
+		func.generates = files
 		GENERATES += list(files)
 		return func
 
