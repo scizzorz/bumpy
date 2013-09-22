@@ -39,6 +39,7 @@ Bumpy uses Python decorators to record and manipulate your tasks. Bumpy also inc
 * `@setup` identifies a task as the "setup" task. The "setup" task will be run immediately, before any other bumpy processing has started.
 * `@teardown` identifies a task as the "teardown" task. The "teardown" task will be run just prior to exiting, after all other bumpy processing has completed.
 * `@private` hides the task from the `help` task. Can be used to hide the setup and teardown tasks or to create tasks that can act as requirements but can't be called manually.
+* `@method` will provide the task object as the first parameter when invoking the task
 * `@args(...)` specifies which arguments this task should accept from the command line. A task *must accept* `**kwargs` in order to receive these options.
 * `@requires(...)` specifies that this task requires certain things before it can be run. The requirements can either be a filename (as a string) or another bumpy task: `@requires("file.txt")` or `@requires(compile)`. Any missing files will cause bumpy to abort this task. Any required tasks will be executed before executing this task, and failures will prevent this task from being executed. If a task is required multiple times it will only be executed once.
 * `@alias(...)` allows the task to be called from names other than its declared function name

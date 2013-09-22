@@ -59,6 +59,7 @@ class _Task:
 		self.requirements = ()
 		self.generates = ()
 		self.valid = None
+		self.method = False
 
 	def __call__(self, *args, **kwargs):
 		if self.requirements:
@@ -68,7 +69,10 @@ class _Task:
 
 		try:
 			require(*self.requirements)
-			self.func(*args, **kwargs)
+			if self.method:
+				self.func(self, *args, **kwargs)
+			else:
+				self.func(*args, **kwargs)
 		except _AbortException, ex:
 			self.valid = False
 			self.__print('abort', self, ex.message)
@@ -156,6 +160,11 @@ def private(func):
 	if func.name in DICT:
 		del DICT[func.name]
 
+	return func
+
+def method(func):
+	func = task(func)
+	func.method = True
 	return func
 
 def suppress(*messages):
