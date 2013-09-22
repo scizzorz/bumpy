@@ -11,5 +11,5 @@ setup(
 	author_email='jweachock@gmail.com',
 	py_modules=['bumpy'],
 	include_package_data=True,
-	scripts=['bin/bumpy'],
+	scripts=['bin/bumpy', 'bin/bump'],
 )
