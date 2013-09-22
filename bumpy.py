@@ -1,4 +1,4 @@
-import os, getopt, subprocess, sys, os
+import os, getopt, subprocess, sys, time
 
 CONFIG = {
 	'color': True,
