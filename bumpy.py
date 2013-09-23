@@ -49,6 +49,7 @@ OPTIONS = None
 
 # Private helpers
 def _get_task(name):
+	'''Look up a task by name.'''
 	global TASKS
 
 	if name in TASKS:
@@ -59,6 +60,7 @@ def _get_task(name):
 			return matches[0]
 
 def _opts_to_dict(*opts):
+	'''Convert a tuple of options returned from getopt into a dictionary.'''
 	ret = {}
 	for key, val in opts:
 		if key[:2] == '--': key = key[2:]
@@ -68,19 +70,24 @@ def _opts_to_dict(*opts):
 	return ret
 
 def _highlight(string, color):
+	'''Return a string highlighted for a terminal.'''
 	if CONFIG['color']:
 		if color < 8:
 			return '\033[{color}m{string}\033[0m'.format(string = string, color = color+30)
 		else:
 			return '\033[{color}m{string}\033[0m'.format(string = string, color = color+82)
+	else:
+		return string
 
 
 # Private classes
 class _AbortException(Exception):
+	'''Thrown when a task needs to abort.'''
 	def __init__(self, message):
 		Exception.__init__(self, message)
 
 class _Task:
+	'''A wrapper around a function that contains bumpy-specific information.'''
 	aliases = ()
 	suppress = ()
 	args = []
@@ -93,11 +100,13 @@ class _Task:
 	method = False
 
 	def __init__(self, func):
+		'''Initialize the Task with a name and help string.'''
 		self.func = func
 		self.name = func.__name__
 		self.help = func.__doc__
 
 	def __call__(self, *args, **kwargs):
+		'''Invoke the wrapped function after meeting all requirements.'''
 		if self.requirements and self.generates:
 			self.__print('enter_genreq', self, self.generates, self.reqstr())
 		elif self.requirements:
@@ -123,6 +132,7 @@ class _Task:
 		return self.valid
 
 	def __repr__(self):
+		'''Highlight the wrapped function name based on its state.'''
 		color = CONFIG['color_invalid']
 
 		if self.valid:
@@ -133,12 +143,14 @@ class _Task:
 		return _highlight('[' + self.name + ']', color)
 
 	def __print(self, id, *args):
+		'''Print a message if it's not suppressed.'''
 		if 'all' in self.suppress or id in self.suppress: return
 		if 'all' in CONFIG['suppress'] or id in CONFIG['suppress']: return
 
 		print LOCALE[id].format(*args)
 
 	def match(self, name):
+		'''Compare an argument string to the task name.'''
 		if self.name.startswith(name):
 			return True
 
@@ -147,13 +159,18 @@ class _Task:
 				return True
 
 	def reqstr(self):
+		'''Concatenate the requirements tuple into a string.'''
 		return ', '.join(x.__repr__() for x in self.requirements)
 
 	def aliasstr(self):
+		'''Concatenate the aliases tuple into a string.'''
 		return ', '.join(x.__repr__() for x in self.aliases)
 
 class _Generic:
+	'''An anonymous wrapper around another task.
+	All methods return a reference to this object so that they can be linked.'''
 	def __init__(self, func):
+		'''Initialize the task with a deep copy and mark @private and @method.'''
 		self.task = task(copy.deepcopy(func))
 		method(self.task)
 		private(self.task)
@@ -186,6 +203,7 @@ class _Generic:
 
 # Decorators | attributes
 def task(func):
+	'''Convert a function into a task.'''
 	global TASKS
 	if not isinstance(func, _Task):
 		func = _Task(func)
@@ -193,30 +211,38 @@ def task(func):
 	return func
 
 def default(func):
+	'''Execute this task when bumpy is invoked with no arguments.'''
 	global DEFAULT
 	func = task(func)
 	DEFAULT = func
 	return func
 
 def setup(func):
+	'''Execute this task before all other tasks.'''
 	global SETUP
 	func = task(func)
 	SETUP = func
 	return func
 
 def teardown(func):
+	'''Execute this task after all other tasks.'''
 	global TEARDOWN
 	func = task(func)
 	TEARDOWN = func
 	return func
 
 def options(func):
+	'''Execute this task after processing option flags.
+	Must accept **kwargs as a parameter.'''
 	global OPTIONS
 	func = task(func)
 	OPTIONS = func
 	return func
 
 def private(func):
+	'''Remove this task from the task index.
+	This will prevent it from being iterated over, and subsequently will hide it
+	from the help task.'''
 	global TASKS
 	func = task(func)
 	if func.name in TASKS:
@@ -224,17 +250,22 @@ def private(func):
 	return func
 
 def method(func):
+	'''Explicitly pass the task into itself as a parameter.'''
 	func = task(func)
 	func.method = True
 	return func
 
 def generic(func):
+	'''Alias combination for @method and @private.'''
 	func = task(func)
 	method(func)
 	private(func)
 	return func
 
 def attributes(*attrs):
+	'''Apply multiple attributes to this task.
+	Attributes include default, setup, teardown, options, private, method,
+	and generic.'''
 	def wrapper(func):
 		if 'default' in attrs: default(func)
 		if 'setup' in attrs: setup(func)
@@ -249,6 +280,9 @@ def attributes(*attrs):
 
 # Decorators | configuration
 def generates(target):
+	'''Indicates that this task will produce an output file.
+	This is used for file-based dependency chains as well as recording which
+	files can be erased by clean().'''
 	def wrapper(func):
 		global GENERATES
 		func = task(func)
@@ -258,6 +292,11 @@ def generates(target):
 	return wrapper
 
 def requires(*requirements):
+	'''Indicates that this task depends on something.
+	Requirements can either be an external filename or another task. Task
+	requirements will be executed before execution of this task. File
+	requirements will be generated if they can be looked up in the
+	generator table; otherwise, missing files will cause the task to fail.'''
 	def wrapper(func):
 		func = task(func)
 		func.requirements = requirements
@@ -267,6 +306,7 @@ def requires(*requirements):
 	return wrapper
 
 def args(**opts):
+	'''Indicates that this task should accept command line options.'''
 	def wrapper(func):
 		func = task(func)
 		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
@@ -275,6 +315,7 @@ def args(**opts):
 	return wrapper
 
 def alias(*aliases):
+	'''Allow this task to be looked up under other names.'''
 	def wrapper(func):
 		global TASKS
 		func = task(func)
@@ -285,6 +326,7 @@ def alias(*aliases):
 	return wrapper
 
 def suppress(*messages):
+	'''Indicate what types of messages this task should not print.'''
 	def wrapper(func):
 		func = task(func)
 		func.suppress = messages
@@ -294,6 +336,9 @@ def suppress(*messages):
 
 # Helper functions
 def require(*requirements):
+	'''Require tasks or files at runtime.
+	Similar to @requires(...), but it can be invoked at runtime rather than at
+	function creation.'''
 	for req in requirements:
 		if type(req) is str:
 			# does not exist and unknown generator
@@ -315,13 +360,17 @@ def require(*requirements):
 			abort(LOCALE['abort_bad_task'].format(req))
 
 def valid(*things):
+	'''Return True if all tasks or files are valid.
+	Valid tasks have been completed already. Valid files exist on the disk.'''
 	for thing in things:
-		if type(thing) is str:
-			return os.path.exists(thing)
-		else:
-			return req.valid
+		if type(thing) is str and not os.path.exists(thing):
+			return False
+		if req.valid is None:
+			return False
+	return True
 
 def shell(command):
+	'''Pass a command into the shell.'''
 	global CONFIG
 	if 'shell' not in CONFIG['suppress']:
 		print LOCALE['shell'].format(command)
@@ -332,6 +381,9 @@ def shell(command):
 		return ex
 
 def age(*paths):
+	'''Return the minimum age of a set of files.
+	Returns 0 if no paths are given.
+	Returns time.time() if a path does not exist.'''
 	if not paths:
 		return 0
 
@@ -342,16 +394,20 @@ def age(*paths):
 	return min([(time.time() - os.path.getmtime(path)) for path in paths])
 
 def clean():
+	'''Removes all files added to the generator table via @generates.'''
 	global GENERATES
 	shell('rm -f ' + ' '.join([key for key in GENERATES]))
 
 def abort(message):
+	'''Raise an AbortException, halting task execution and exiting.'''
 	raise _AbortException(message)
 
-def clone(func):
-	return _Generic(func)
+def clone(task):
+	'''Return a Generic linked to a task.'''
+	return _Generic(task)
 
 def config(**kwargs):
+	'''Set bumpy configuration values.'''
 	for key in kwargs:
 		CONFIG[key] = kwargs[key]
 
