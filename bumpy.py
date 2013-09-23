@@ -14,21 +14,21 @@ CONFIG = {
 	}
 
 LOCALE = {
+	'abort': 'abort {}: {}',
+	'abort_bad_file': "required file '{}' does not exist",
+	'abort_bad_task': 'required task {} failed',
 	'enter': 'enter {}',
-	'enter_req': 'enter {} <- {}',
 	'enter_gen': 'enter {} -> {!r}',
 	'enter_genreq': 'enter {} -> {!r} <- {}',
-	'leave': 'leave {}',
-	'abort': 'abort {}: {}',
-	'abort_bad_task': 'required task {} failed',
-	'abort_bad_file': "required file '{}' does not exist",
-	'help_command': '{}{}: {}',
+	'enter_req': 'enter {} <- {}',
 	'help_aliases': '\taliases: {}',
-	'help_requires': '\trequires: {}',
-	'help_generates': '\tgenerates: {!r}',
 	'help_args': '\targuments:',
 	'help_arg': '\t\t--{} = {}',
+	'help_command': '{}{}: {}',
+	'help_generates': '\tgenerates: {!r}',
+	'help_requires': '\trequires: {}',
 	'help_unknown': 'unknown task: {}',
+	'leave': 'leave {}',
 	'shell': '$ {}',
 	}
 
