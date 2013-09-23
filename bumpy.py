@@ -319,6 +319,9 @@ def abort(message):
 def clone(func):
 	return _Generic(func)
 
+def config(**kwargs):
+	for key in kwargs:
+		CONFIG[key] = kwargs[key]
 
 # bumpy help
 @default
@@ -349,11 +352,8 @@ def help():
 
 
 # bumpy
-def config(**kwargs):
-	for key in kwargs:
-		CONFIG[key] = kwargs[key]
 
-def get_task(name):
+def _get_task(name):
 	global TASKS
 
 	if name in TASKS:
@@ -363,7 +363,7 @@ def get_task(name):
 		if matches:
 			return matches[0]
 
-def opts_to_dict(*opts):
+def _opts_to_dict(*opts):
 	ret = {}
 	for key, val in opts:
 		if key[:2] == '--': key = key[2:]
@@ -375,7 +375,7 @@ def opts_to_dict(*opts):
 def main(args):
 	if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
 		opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
-		opts = opts_to_dict(*opts)
+		opts = _opts_to_dict(*opts)
 		OPTIONS(**opts)
 
 	if SETUP:
@@ -387,7 +387,7 @@ def main(args):
 		if CONFIG['cli']:
 			temp = None
 			if len(args) > 0:
-				temp = get_task(args[0])
+				temp = _get_task(args[0])
 				if temp:
 					args = args[1:]
 
@@ -397,7 +397,7 @@ def main(args):
 			kwargs = temp.defaults
 			if temp.args:
 				temp_kwargs, args = getopt.getopt(args, '', temp.args)
-				temp_kwargs = opts_to_dict(*temp_kwargs)
+				temp_kwargs = _opts_to_dict(*temp_kwargs)
 				for key in temp_kwargs:
 					kwargs[key] = temp_kwargs[key]
 
@@ -409,7 +409,7 @@ def main(args):
 
 		else:
 			for arg in args:
-				temp = get_task(arg)
+				temp = _get_task(arg)
 				if temp is not None:
 					temp()
 				else:
