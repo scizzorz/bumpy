@@ -122,7 +122,7 @@ class _Task:
 				self.func(self, *args, **kwargs)
 			else:
 				self.func(*args, **kwargs)
-		except _AbortException, ex:
+		except Exception, ex:
 			self.valid = False
 			self.__print('abort', self, ex.message)
 		else:
@@ -441,7 +441,9 @@ def help():
 
 
 # Do everything awesome
-def main(args):
+@private
+@method
+def main(self, args):
 	if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
 		opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
 		opts = _opts_to_dict(*opts)
@@ -460,8 +462,9 @@ def main(args):
 				if temp:
 					args = args[1:]
 
-			if not temp and DEFAULT:
-				temp = DEFAULT
+			temp = temp if temp else DEFAULT
+			if temp is None:
+				abort('Unable to find task "{}"'.format(arg))
 
 			kwargs = temp.defaults
 			if temp.args:
@@ -474,15 +477,15 @@ def main(args):
 				temp(*args, **kwargs)
 			except Exception, ex:
 				temp.valid = False
-				print LOCALE['abort'].format(temp, ex.message)
+				self.__print('abort', temp, ex.message)
 
 		else:
 			for arg in args:
 				temp = _get_task(arg)
-				if temp is not None:
-					temp()
-				else:
-					print LOCALE['help_unknown'].format(arg)
+				if temp is None:
+					abort('Unable to find task "{}"'.format(arg))
+
+				temp()
 
 	if TEARDOWN:
 		TEARDOWN()
