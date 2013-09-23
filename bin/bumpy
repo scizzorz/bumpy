@@ -10,12 +10,13 @@ if __name__ == '__main__':
 	module = None
 	args = sys.argv[1:]
 
-	if args[0] == '--version':
-		print 'bumpy v' + bumpy.__version__
-		sys.exit()
-	elif args[0] in ('--file', '-f'):
-		module = inc(args[1])
-		args = args[2:]
+	if len(args):
+		if args[0] == '--version':
+			print 'bumpy v' + bumpy.__version__
+			sys.exit()
+		elif args[0] in ('--file', '-f'):
+			module = inc(args[1])
+			args = args[2:]
 
 	module = module or inc('bum.py') or inc('build.py')
 
