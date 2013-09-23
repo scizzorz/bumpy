@@ -32,8 +32,7 @@ LOCALE = {
 	'shell': '$ {}',
 	}
 
-LIST = []
-DICT = {}
+TASKS = {}
 GENERATES = {}
 DEFAULT = None
 SETUP = None
@@ -155,12 +154,11 @@ class _Generic:
 
 # bumpy decorators
 def task(func):
-	global LIST, DICT
+	global TASKS
 
 	if not isinstance(func, _Task):
 		func = _Task(func)
-		LIST.append(func)
-		DICT[func.name] = func
+		TASKS[func.name] = func
 	return func
 
 def default(func):
@@ -192,15 +190,12 @@ def options(func):
 	return func
 
 def private(func):
-	global LIST, DICT
+	global TASKS
 
 	func = task(func)
 
-	if func in LIST:
-		LIST.remove(func)
-
-	if func.name in DICT:
-		del DICT[func.name]
+	if func.name in TASKS:
+		del TASKS[func.name]
 
 	return func
 
@@ -235,11 +230,11 @@ def requires(*requirements):
 
 def alias(*aliases):
 	def wrapper(func):
-		global DICT
+		global TASKS
 		func = task(func)
 		func.aliases = aliases
 		for alias in aliases:
-			DICT[alias] = func
+			TASKS[alias] = func
 		return func
 
 	return wrapper
@@ -328,7 +323,7 @@ def clone(func):
 @suppress('enter', 'leave')
 def help():
 	'''Print all available tasks and descriptions.'''
-	for task in LIST:
+	for key, task in TASKS.items():
 		tags = ''
 		if task is DEFAULT:
 			tags += '*'
@@ -357,12 +352,12 @@ def config(**kwargs):
 		CONFIG[key] = kwargs[key]
 
 def get_task(name):
-	global LIST, DICT
+	global TASKS
 
-	if name in DICT:
-		return DICT[name]
+	if name in TASKS:
+		return TASKS[name]
 	elif CONFIG['abbrev']:
-		matches = [task for task in LIST if task.match(name)]
+		matches = [task for key, task in TASKS.items() if task.match(name)]
 		if matches:
 			return matches[0]
 
