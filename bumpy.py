@@ -14,15 +14,18 @@ CONFIG = {
 	}
 
 LOCALE = {
-	'execute_single': 'enter {}',
-	'execute_multi': 'enter {} - {}',
-	'finish': 'leave {}',
-	'abort': 'abort {} - {}',
+	'enter': 'enter {}',
+	'enter_req': 'enter {} <- {}',
+	'enter_gen': 'enter {} -> {!r}',
+	'enter_genreq': 'enter {} -> {!r} <- {}',
+	'leave': 'leave {}',
+	'abort': 'abort {} -- {}',
 	'abort_bad_task': 'required task {} failed',
 	'abort_bad_file': "required file '{}' does not exist",
-	'help_command': '{}{} - {}',
+	'help_command': '{}{} -- {}',
 	'help_aliases': '\taliases: {}',
 	'help_requires': '\trequires: {}',
+	'help_generates': '\tgenerates: {!r}',
 	'help_unknown': 'unknown task: {}',
 	'shell': '$ {}',
 	}
@@ -62,10 +65,14 @@ class _Task:
 		self.method = False
 
 	def __call__(self, *args, **kwargs):
-		if self.requirements:
-			self.__print('execute_multi', self, self.reqstr())
+		if self.requirements and self.generates:
+			self.__print('enter_genreq', self, self.generates, self.reqstr())
+		elif self.requirements:
+			self.__print('enter_req', self, self.reqstr())
+		elif self.generates:
+			self.__print('enter_gen', self, self.generates)
 		else:
-			self.__print('execute_single', self)
+			self.__print('enter', self)
 
 		try:
 			require(*self.requirements)
@@ -78,7 +85,7 @@ class _Task:
 			self.__print('abort', self, ex.message)
 		else:
 			self.valid = True
-			self.__print('finish', self)
+			self.__print('leave', self)
 
 		return self.valid
 
@@ -309,7 +316,7 @@ def clone(func):
 
 # bumpy help
 @default
-@suppress('execute_single', 'execute_multi', 'finish')
+@suppress('enter', 'leave')
 def help():
 	'''Print all available tasks and descriptions.'''
 	for task in LIST:
@@ -327,7 +334,8 @@ def help():
 			print LOCALE['help_aliases'].format(task.aliasstr())
 		if task.requirements:
 			print LOCALE['help_requires'].format(task.reqstr())
-
+		if task.generates:
+			print LOCALE['help_generates'].format(task.generates)
 
 # bumpy
 def config(**kwargs):
