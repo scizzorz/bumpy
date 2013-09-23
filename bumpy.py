@@ -60,6 +60,8 @@ class _Task:
 		self.args = []
 		self.defaults = {}
 		self.requirements = ()
+		self.file_requirements = ()
+		self.task_requirements = ()
 		self.generates = None
 		self.valid = None
 		self.method = False
@@ -223,6 +225,8 @@ def requires(*requirements):
 	def wrapper(func):
 		func = task(func)
 		func.requirements = requirements
+		func.file_requirements = [req for req in requirements if type(req) is str]
+		func.task_requirements = [req for req in requirements if type(req) is not str]
 		return func
 
 	return wrapper
@@ -297,6 +301,9 @@ def shell(command):
 		return ex
 
 def age(*paths):
+	if not paths:
+		return 0
+
 	for path in paths:
 		if not os.path.exists(path):
 			return time.time()
