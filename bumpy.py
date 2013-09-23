@@ -14,10 +14,10 @@ CONFIG = {
 	}
 
 LOCALE = {
-	'execute_single': 'execute\t{}',
-	'execute_multi': 'execute\t{} - {}',
-	'finish': 'finish \t{}',
-	'abort': 'abort  \t{} - {}',
+	'execute_single': 'enter {}',
+	'execute_multi': 'enter {} - {}',
+	'finish': 'leave {}',
+	'abort': 'abort {} - {}',
 	'abort_bad_task': 'required task {} failed',
 	'abort_bad_file': "required file '{}' does not exist",
 	'help_command': '{}{} - {}',
