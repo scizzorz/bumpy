@@ -218,14 +218,23 @@ def generates(target):
 def require(*requirements):
 	for req in requirements:
 		if type(req) is str:
-			if not os.path.exists(req):
+			# does not exist and unknown generator
+			if not os.path.exists(req) and req not in GENERATES:
 				abort(LOCALE['abort_bad_file'].format(req))
-		else:
-			if req.valid is None:
-				req()
 
-			if req.valid == False:
-				abort(LOCALE['abort_bad_task'].format(req))
+			# exists but unknown generator
+			if req not in GENERATES:
+				return
+
+			# exists and known generator
+			if req in GENERATES:
+				req = GENERATES[req]
+
+		if req.valid is None:
+			req()
+
+		if req.valid is False:
+			abort(LOCALE['abort_bad_task'].format(req))
 
 def valid(*things):
 	for thing in things:
