@@ -1,5 +1,8 @@
 import copy, os, getopt, subprocess, sys, time
 
+__version__ = '0.3.0'
+
+# Configuration settings
 CONFIG = {
 	'color': True,
 	'color_invalid': 4,
@@ -13,6 +16,8 @@ CONFIG = {
 	'long_options': [],
 	}
 
+
+# Output string formats / messages
 LOCALE = {
 	'abort': 'abort {}: {}',
 	'abort_bad_file': "required file '{}' does not exist",
@@ -32,12 +37,35 @@ LOCALE = {
 	'shell': '$ {}',
 	}
 
+
+# State variables
 TASKS = {}
 GENERATES = {}
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
 OPTIONS = None
+
+
+# Private helpers
+def _get_task(name):
+	global TASKS
+
+	if name in TASKS:
+		return TASKS[name]
+	elif CONFIG['abbrev']:
+		matches = [task for key, task in TASKS.items() if task.match(name)]
+		if matches:
+			return matches[0]
+
+def _opts_to_dict(*opts):
+	ret = {}
+	for key, val in opts:
+		if key[:2] == '--': key = key[2:]
+		elif key[:1] == '-': key = key[1:]
+		if val == '': val = True
+		ret[key] = val
+	return ret
 
 def _highlight(string, color):
 	if CONFIG['color']:
@@ -46,6 +74,8 @@ def _highlight(string, color):
 		else:
 			return '\033[{color}m{string}\033[0m'.format(string = string, color = color+82)
 
+
+# Private classes
 class _AbortException(Exception):
 	def __init__(self, message):
 		Exception.__init__(self, message)
@@ -154,7 +184,7 @@ class _Generic:
 		return self
 
 
-# bumpy decorators
+# Decorators
 def task(func):
 	global TASKS
 
@@ -260,7 +290,8 @@ def generates(target):
 
 	return wrapper
 
-# bumpy helpers
+
+# Helper functions
 def require(*requirements):
 	for req in requirements:
 		if type(req) is str:
@@ -323,7 +354,8 @@ def config(**kwargs):
 	for key in kwargs:
 		CONFIG[key] = kwargs[key]
 
-# bumpy help
+
+# Default 'help' function
 @default
 @suppress('enter', 'leave')
 def help():
@@ -351,27 +383,7 @@ def help():
 				print LOCALE['help_arg'].format(arg, task.defaults[arg])
 
 
-# bumpy
-
-def _get_task(name):
-	global TASKS
-
-	if name in TASKS:
-		return TASKS[name]
-	elif CONFIG['abbrev']:
-		matches = [task for key, task in TASKS.items() if task.match(name)]
-		if matches:
-			return matches[0]
-
-def _opts_to_dict(*opts):
-	ret = {}
-	for key, val in opts:
-		if key[:2] == '--': key = key[2:]
-		elif key[:1] == '-': key = key[1:]
-		if val == '': val = True
-		ret[key] = val
-	return ret
-
+# Do everything awesome
 def main(args):
 	if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
 		opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
