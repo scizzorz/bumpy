@@ -184,10 +184,9 @@ class _Generic:
 		return self
 
 
-# Decorators
+# Decorators | attributes
 def task(func):
 	global TASKS
-
 	if not isinstance(func, _Task):
 		func = _Task(func)
 		TASKS[func.name] = func
@@ -195,40 +194,33 @@ def task(func):
 
 def default(func):
 	global DEFAULT
-
 	func = task(func)
 	DEFAULT = func
 	return func
 
 def setup(func):
 	global SETUP
-
 	func = task(func)
 	SETUP = func
 	return func
 
 def teardown(func):
 	global TEARDOWN
-
 	func = task(func)
 	TEARDOWN = func
 	return func
 
 def options(func):
 	global OPTIONS
-
 	func = task(func)
 	OPTIONS = func
 	return func
 
 def private(func):
 	global TASKS
-
 	func = task(func)
-
 	if func.name in TASKS:
 		del TASKS[func.name]
-
 	return func
 
 def method(func):
@@ -242,12 +234,27 @@ def generic(func):
 	private(func)
 	return func
 
-def suppress(*messages):
+def attributes(*attrs):
 	def wrapper(func):
-		func = task(func)
-		func.suppress = messages
+		if 'default' in attrs: default(func)
+		if 'setup' in attrs: setup(func)
+		if 'teardown' in attrs: teardown(func)
+		if 'options' in attrs: options(func)
+		if 'private' in attrs: private(func)
+		if 'method' in attrs: method(func)
+		if 'generic' in attrs: generic(func)
 		return func
+	return wrapper
 
+
+# Decorators | configuration
+def generates(target):
+	def wrapper(func):
+		global GENERATES
+		func = task(func)
+		func.generates = target
+		GENERATES[target] = func
+		return func
 	return wrapper
 
 def requires(*requirements):
@@ -257,7 +264,14 @@ def requires(*requirements):
 		func.file_requirements = [req for req in requirements if type(req) is str]
 		func.task_requirements = [req for req in requirements if type(req) is not str]
 		return func
+	return wrapper
 
+def args(**opts):
+	def wrapper(func):
+		func = task(func)
+		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
+		func.defaults = opts
+		return func
 	return wrapper
 
 def alias(*aliases):
@@ -268,26 +282,13 @@ def alias(*aliases):
 		for alias in aliases:
 			TASKS[alias] = func
 		return func
-
 	return wrapper
 
-def args(**opts):
+def suppress(*messages):
 	def wrapper(func):
 		func = task(func)
-		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
-		func.defaults = opts
+		func.suppress = messages
 		return func
-
-	return wrapper
-
-def generates(target):
-	def wrapper(func):
-		global GENERATES
-		func = task(func)
-		func.generates = target
-		GENERATES[target] = func
-		return func
-
 	return wrapper
 
 
