@@ -29,7 +29,7 @@ LOCALE = {
 
 LIST = []
 DICT = {}
-GENERATES = []
+GENERATES = {}
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
@@ -57,7 +57,7 @@ class _Task:
 		self.args = []
 		self.defaults = {}
 		self.requirements = ()
-		self.generates = ()
+		self.generates = None
 		self.valid = None
 		self.method = False
 
@@ -203,12 +203,12 @@ def args(**opts):
 
 	return wrapper
 
-def generates(*files):
+def generates(target):
 	def wrapper(func):
 		global GENERATES
 		func = task(func)
-		func.generates = files
-		GENERATES += list(files)
+		func.generates = target
+		GENERATES[target] = func
 		return func
 
 	return wrapper
@@ -253,7 +253,7 @@ def age(*paths):
 
 def clean():
 	global GENERATES
-	shell('rm ' + ' '.join(GENERATES))
+	shell('rm -f ' + ' '.join([key for key in GENERATES]))
 
 def abort(message):
 	raise _AbortException(message)
