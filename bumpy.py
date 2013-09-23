@@ -19,13 +19,15 @@ LOCALE = {
 	'enter_gen': 'enter {} -> {!r}',
 	'enter_genreq': 'enter {} -> {!r} <- {}',
 	'leave': 'leave {}',
-	'abort': 'abort {} -- {}',
+	'abort': 'abort {}: {}',
 	'abort_bad_task': 'required task {} failed',
 	'abort_bad_file': "required file '{}' does not exist",
-	'help_command': '{}{} -- {}',
+	'help_command': '{}{}: {}',
 	'help_aliases': '\taliases: {}',
 	'help_requires': '\trequires: {}',
 	'help_generates': '\tgenerates: {!r}',
+	'help_args': '\targuments:',
+	'help_arg': '\t\t--{} = {}',
 	'help_unknown': 'unknown task: {}',
 	'shell': '$ {}',
 	}
@@ -343,6 +345,11 @@ def help():
 			print LOCALE['help_requires'].format(task.reqstr())
 		if task.generates:
 			print LOCALE['help_generates'].format(task.generates)
+		if task.defaults:
+			print LOCALE['help_args']
+			for arg in task.defaults:
+				print LOCALE['help_arg'].format(arg, task.defaults[arg])
+
 
 # bumpy
 def config(**kwargs):
