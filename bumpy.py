@@ -1,4 +1,4 @@
-import os, getopt, subprocess, sys, time
+import copy, os, getopt, subprocess, sys, time
 
 CONFIG = {
 	'color': True,
@@ -110,6 +110,37 @@ class _Task:
 	def aliasstr(self):
 		return ', '.join(x.__repr__() for x in self.aliases)
 
+class _Generic:
+	def __init__(self, func):
+		self.task = task(copy.deepcopy(func))
+		method(self.task)
+		private(self.task)
+
+	def default(self):
+		default(self.task)
+		return self
+	def setup(self):
+		setup(self.task)
+		return self
+	def teardown(self):
+		teardown(self.task)
+		return self
+	def options(self):
+		options(self.task)
+		return self
+	def suppress(self, *messages):
+		suppress(*messages)(self.task)
+		return self
+	def requires(self, *requirements):
+		requires(*requirements)(self.task)
+		return self
+	def args(self, **opts):
+		args(**opts)(self.task)
+		return self
+	def generates(self, target):
+		generates(target)(self.task)
+		return self
+
 
 # bumpy decorators
 def task(func):
@@ -167,6 +198,12 @@ def method(func):
 	func.method = True
 	return func
 
+def generic(func):
+	func = task(func)
+	method(func)
+	private(func)
+	return func
+
 def suppress(*messages):
 	def wrapper(func):
 		func = task(func)
@@ -212,7 +249,6 @@ def generates(target):
 		return func
 
 	return wrapper
-
 
 # bumpy helpers
 def require(*requirements):
@@ -266,6 +302,9 @@ def clean():
 
 def abort(message):
 	raise _AbortException(message)
+
+def clone(func):
+	return _Generic(func)
 
 
 # bumpy help
