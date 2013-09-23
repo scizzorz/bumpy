@@ -51,21 +51,21 @@ class _AbortException(Exception):
 		Exception.__init__(self, message)
 
 class _Task:
+	aliases = ()
+	suppress = ()
+	args = []
+	defaults = {}
+	requirements = ()
+	file_requirements = ()
+	task_requirements = ()
+	generates = None
+	valid = None
+	method = False
+
 	def __init__(self, func):
 		self.func = func
 		self.name = func.__name__
 		self.help = func.__doc__
-
-		self.aliases = ()
-		self.suppress = ()
-		self.args = []
-		self.defaults = {}
-		self.requirements = ()
-		self.file_requirements = ()
-		self.task_requirements = ()
-		self.generates = None
-		self.valid = None
-		self.method = False
 
 	def __call__(self, *args, **kwargs):
 		if self.requirements and self.generates:
@@ -103,8 +103,10 @@ class _Task:
 		return _highlight('[' + self.name + ']', color)
 
 	def __print(self, id, *args):
-		if ('all' not in self.suppress) and (id not in self.suppress) and ('all' not in CONFIG['suppress']) and (id not in CONFIG['suppress']):
-			print LOCALE[id].format(*args)
+		if 'all' in self.suppress or id in self.suppress: return
+		if 'all' in CONFIG['suppress'] or id in CONFIG['suppress']: return
+
+		print LOCALE[id].format(*args)
 
 	def match(self, name):
 		if self.name.startswith(name):
