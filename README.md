@@ -239,6 +239,8 @@ Feel free to investigate the source for these. I'll write them up shortly:
 
 * `@args(*args)`
 * `@suppress(*types)`
+* `@generic`
+* `@attributes(*attrs)`
 * `@options`
 * `config(*settings)`
 * `clone(task)`
