@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, imp, sys
+import getopt, imp, os, sys
 import bumpy
 
 def inc(filename):
@@ -7,8 +7,20 @@ def inc(filename):
 		return imp.load_source('build', filename)
 
 if __name__ == '__main__':
-	module = inc('bum.py') or inc('bumpy') or inc('build.py') or inc('build')
+	module = None
+	args = sys.argv[1:]
+
+	if len(args):
+		if args[0] == '--version':
+			print 'bumpy v' + bumpy.__version__
+			sys.exit()
+		elif args[0] in ('--file', '-f'):
+			module = inc(args[1])
+			args = args[2:]
+
+	module = module or inc('bum.py') or inc('build.py')
+
 	if not module:
-		print 'Unable to find a proper bumpy build file.'
+		print 'Unable to load a proper bumpfile'
 	else:
-		bumpy.main(sys.argv[1:])
+		bumpy.main(args)
