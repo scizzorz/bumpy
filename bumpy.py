@@ -107,17 +107,18 @@ class _Task:
 
 	def __call__(self, *args, **kwargs):
 		'''Invoke the wrapped function after meeting all requirements.'''
-		if self.requirements and self.generates:
-			self.__print('enter_genreq', self, self.generates, self.reqstr())
-		elif self.requirements:
-			self.__print('enter_req', self, self.reqstr())
-		elif self.generates:
-			self.__print('enter_gen', self, self.generates)
-		else:
-			self.__print('enter', self)
-
 		try:
 			require(*self.requirements)
+
+			if self.requirements and self.generates:
+				self.__print('enter_genreq', self, self.generates, self.reqstr())
+			elif self.requirements:
+				self.__print('enter_req', self, self.reqstr())
+			elif self.generates:
+				self.__print('enter_gen', self, self.generates)
+			else:
+				self.__print('enter', self)
+
 			if self.method:
 				self.func(self, *args, **kwargs)
 			else:
