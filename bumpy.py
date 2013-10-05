@@ -90,12 +90,16 @@ class _Task:
 	'''A wrapper around a function that contains bumpy-specific information.'''
 	aliases = ()
 	suppress = ()
+
 	args = []
 	defaults = {}
+	expects = []
+
 	requirements = ()
 	file_requirements = ()
 	task_requirements = ()
 	generates = None
+
 	valid = None
 	method = False
 
@@ -209,8 +213,13 @@ def _taskify(func):
 
 		spec = inspect.getargspec(func.func)
 		if spec.args and spec.defaults:
-			func.defaults = {spec.args[i]: spec.defaults[i] for i in range(len(spec.args))}
-			func.args = [key + ('=' if func.defaults[key] is not False else '') for key in func.defaults]
+			num_args = len(spec.args)
+			num_keys = len(spec.defaults)
+			isflag = lambda x, y: '' if x.defaults[y] is False else '='
+
+			func.expects = spec.args[:(num_args - num_keys)]
+			func.defaults = {spec.args[i - num_keys]: spec.defaults[i] for i in range(num_keys)}
+			func.args = [key + isflag(func, key) for key in func.defaults]
 
 		if not func.name.startswith('_'):
 			TASKS[func.name] = func
