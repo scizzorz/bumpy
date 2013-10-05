@@ -226,6 +226,7 @@ def task(*args, **kwargs):
 	# as well as @task(), @task('default'), etc.
 	else:
 		def wrapper(func):
+			func = _taskify(func)
 			func = attributes(*args)(func)
 			if 'requires' in kwargs:
 				requires(*_tuplify(kwargs['requires']))(func)
@@ -242,28 +243,28 @@ def task(*args, **kwargs):
 
 
 def default(func):
-	'''Execute this task when bumpy is invoked with no arguments.'''
+	'''DEPRECATED: Execute this task when bumpy is invoked with no arguments.'''
 	global DEFAULT
 	func = _taskify(func)
 	DEFAULT = func
 	return func
 
 def setup(func):
-	'''Execute this task before all other tasks.'''
+	'''DEPRECTAED: Execute this task before all other tasks.'''
 	global SETUP
 	func = _taskify(func)
 	SETUP = func
 	return func
 
 def teardown(func):
-	'''Execute this task after all other tasks.'''
+	'''DEPRECTAED: Execute this task after all other tasks.'''
 	global TEARDOWN
 	func = _taskify(func)
 	TEARDOWN = func
 	return func
 
 def options(func):
-	'''Execute this task after processing option flags.
+	'''DEPRECTAED: Execute this task after processing option flags.
 	Must accept **kwargs as a parameter.'''
 	global OPTIONS
 	func = _taskify(func)
@@ -271,7 +272,7 @@ def options(func):
 	return func
 
 def private(func):
-	'''Remove this task from the task index.
+	'''DEPRECTAED: Remove this task from the task index.
 	This will prevent it from being iterated over, and subsequently will hide it
 	from the help task.'''
 	global TASKS
@@ -281,20 +282,20 @@ def private(func):
 	return func
 
 def method(func):
-	'''Explicitly pass the task into itself as a parameter.'''
+	'''DEPRECTAED: Explicitly pass the task into itself as a parameter.'''
 	func = _taskify(func)
 	func.method = True
 	return func
 
 def generic(func):
-	'''Alias combination for @method and @private.'''
+	'''DEPRECTAED: Alias combination for @method and @private.'''
 	func = _taskify(func)
 	method(func)
 	private(func)
 	return func
 
 def attributes(*attrs):
-	'''Apply multiple attributes to this task.
+	'''DEPRECTAED: Apply multiple attributes to this task.
 	Attributes include default, setup, teardown, options, private, method,
 	and generic.'''
 	def wrapper(func):
@@ -312,7 +313,7 @@ def attributes(*attrs):
 
 # Decorators | configuration
 def generates(target):
-	'''Indicates that this task will produce an output file.
+	'''DEPRECTAED: Indicates that this task will produce an output file.
 	This is used for file-based dependency chains as well as recording which
 	files can be erased by clean().'''
 	def wrapper(func):
@@ -324,7 +325,7 @@ def generates(target):
 	return wrapper
 
 def requires(*requirements):
-	'''Indicates that this task depends on something.
+	'''DEPRECTAED: Indicates that this task depends on something.
 	Requirements can either be an external filename or another task. Task
 	requirements will be executed before execution of this task. File
 	requirements will be generated if they can be looked up in the
@@ -338,7 +339,7 @@ def requires(*requirements):
 	return wrapper
 
 def args(**opts):
-	'''Indicates that this task should accept command line options.'''
+	'''DEPRECTAED: Indicates that this task should accept command line options.'''
 	def wrapper(func):
 		func = _taskify(func)
 		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
@@ -347,7 +348,7 @@ def args(**opts):
 	return wrapper
 
 def alias(*aliases):
-	'''Allow this task to be looked up under other names.'''
+	'''DEPRECTAED: Allow this task to be looked up under other names.'''
 	def wrapper(func):
 		global TASKS
 		func = _taskify(func)
@@ -358,7 +359,7 @@ def alias(*aliases):
 	return wrapper
 
 def suppress(*messages):
-	'''Indicate what types of messages this task should not print.'''
+	'''DEPRECTAED: Indicate what types of messages this task should not print.'''
 	def wrapper(func):
 		func = _taskify(func)
 		func.suppress = messages
