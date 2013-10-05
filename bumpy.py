@@ -1,6 +1,6 @@
-import copy, os, getopt, subprocess, sys, time
+import copy, getopt, inspect, os, subprocess, sys, time
 
-__version__ = '0.3.0'
+__version__ = '0.4.0'
 
 # Configuration settings
 CONFIG = {
@@ -206,6 +206,12 @@ def _taskify(func):
 	global TASKS
 	if not isinstance(func, _Task):
 		func = _Task(func)
+
+		spec = inspect.getargspec(func.func)
+		if spec.args and spec.defaults:
+			func.defaults = {spec.args[i]: spec.defaults[i] for i in range(len(spec.args))}
+			func.args = [key + ('=' if func.defaults[key] is not False else '') for key in func.defaults]
+
 		if not func.name.startswith('_'):
 			TASKS[func.name] = func
 	return func
