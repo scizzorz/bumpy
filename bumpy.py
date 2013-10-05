@@ -206,7 +206,8 @@ def _taskify(func):
 	global TASKS
 	if not isinstance(func, _Task):
 		func = _Task(func)
-		TASKS[func.name] = func
+		if not func.name.startswith('_'):
+			TASKS[func.name] = func
 	return func
 
 def _tuplify(args):
