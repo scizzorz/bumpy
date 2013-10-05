@@ -268,6 +268,7 @@ def attributes(*attrs):
 	Attributes include default, setup, teardown, options, private, method,
 	and generic.'''
 	def wrapper(func):
+		func = task(func)
 		if 'default' in attrs: default(func)
 		if 'setup' in attrs: setup(func)
 		if 'teardown' in attrs: teardown(func)
