@@ -202,33 +202,62 @@ class _Generic:
 		return self
 
 
-# Decorators | attributes
-def task(func):
-	'''Convert a function into a task.'''
+def _taskify(func):
 	global TASKS
 	if not isinstance(func, _Task):
 		func = _Task(func)
 		TASKS[func.name] = func
 	return func
 
+def _tuplify(args):
+	if not isinstance(args, tuple):
+		args = (args,)
+	return args
+
+# Decorators | attributes
+def task(*args, **kwargs):
+	'''Convert a function into a task.'''
+
+	# support @task
+	if args and hasattr(args[0], '__call__'):
+		return _taskify(args[0])
+
+	# as well as @task(), @task('default'), etc.
+	else:
+		def wrapper(func):
+			func = attributes(*args)(func)
+			if 'requires' in kwargs:
+				requires(*_tuplify(kwargs['requires']))(func)
+			if 'generates' in kwargs:
+				generates(kwargs['generates'])(func)
+			if 'alias' in kwargs:
+				alias(*_tuplify(kwargs['alias']))(func)
+			if 'suppress' in kwargs:
+				suppress(*_tuplify(kwargs['suppress']))(func)
+
+			return func
+
+		return wrapper
+
+
 def default(func):
 	'''Execute this task when bumpy is invoked with no arguments.'''
 	global DEFAULT
-	func = task(func)
+	func = _taskify(func)
 	DEFAULT = func
 	return func
 
 def setup(func):
 	'''Execute this task before all other tasks.'''
 	global SETUP
-	func = task(func)
+	func = _taskify(func)
 	SETUP = func
 	return func
 
 def teardown(func):
 	'''Execute this task after all other tasks.'''
 	global TEARDOWN
-	func = task(func)
+	func = _taskify(func)
 	TEARDOWN = func
 	return func
 
@@ -236,7 +265,7 @@ def options(func):
 	'''Execute this task after processing option flags.
 	Must accept **kwargs as a parameter.'''
 	global OPTIONS
-	func = task(func)
+	func = _taskify(func)
 	OPTIONS = func
 	return func
 
@@ -245,20 +274,20 @@ def private(func):
 	This will prevent it from being iterated over, and subsequently will hide it
 	from the help task.'''
 	global TASKS
-	func = task(func)
+	func = _taskify(func)
 	if func.name in TASKS:
 		del TASKS[func.name]
 	return func
 
 def method(func):
 	'''Explicitly pass the task into itself as a parameter.'''
-	func = task(func)
+	func = _taskify(func)
 	func.method = True
 	return func
 
 def generic(func):
 	'''Alias combination for @method and @private.'''
-	func = task(func)
+	func = _taskify(func)
 	method(func)
 	private(func)
 	return func
@@ -268,7 +297,7 @@ def attributes(*attrs):
 	Attributes include default, setup, teardown, options, private, method,
 	and generic.'''
 	def wrapper(func):
-		func = task(func)
+		func = _taskify(func)
 		if 'default' in attrs: default(func)
 		if 'setup' in attrs: setup(func)
 		if 'teardown' in attrs: teardown(func)
@@ -287,7 +316,7 @@ def generates(target):
 	files can be erased by clean().'''
 	def wrapper(func):
 		global GENERATES
-		func = task(func)
+		func = _taskify(func)
 		func.generates = target
 		GENERATES[target] = func
 		return func
@@ -300,7 +329,7 @@ def requires(*requirements):
 	requirements will be generated if they can be looked up in the
 	generator table; otherwise, missing files will cause the task to fail.'''
 	def wrapper(func):
-		func = task(func)
+		func = _taskify(func)
 		func.requirements = requirements
 		func.file_requirements = [req for req in requirements if type(req) is str]
 		func.task_requirements = [req for req in requirements if type(req) is not str]
@@ -310,7 +339,7 @@ def requires(*requirements):
 def args(**opts):
 	'''Indicates that this task should accept command line options.'''
 	def wrapper(func):
-		func = task(func)
+		func = _taskify(func)
 		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
 		func.defaults = opts
 		return func
@@ -320,7 +349,7 @@ def alias(*aliases):
 	'''Allow this task to be looked up under other names.'''
 	def wrapper(func):
 		global TASKS
-		func = task(func)
+		func = _taskify(func)
 		func.aliases = aliases
 		for alias in aliases:
 			TASKS[alias] = func
@@ -330,7 +359,7 @@ def alias(*aliases):
 def suppress(*messages):
 	'''Indicate what types of messages this task should not print.'''
 	def wrapper(func):
-		func = task(func)
+		func = _taskify(func)
 		func.suppress = messages
 		return func
 	return wrapper
