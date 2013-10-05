@@ -9,7 +9,6 @@ CONFIG = {
 	'color_success': 2,
 	'color_fail': 1,
 
-	'cli': False,
 	'abbrev': True,
 	'suppress': (),
 	'options': '',
@@ -28,13 +27,16 @@ LOCALE = {
 	'enter_req': 'enter {} <- {}',
 	'help_aliases': '\taliases: {}',
 	'help_args': '\targuments:',
-	'help_arg': '\t\t--{} = {}',
+	'help_arg': '\t\t<{}>',
+	'help_key': '\t\t--{} = {}',
 	'help_command': '{}{}: {}',
 	'help_generates': '\tgenerates: {!r}',
 	'help_requires': '\trequires: {}',
 	'help_unknown': 'unknown task: {}',
 	'leave': 'leave {}',
 	'shell': '$ {}',
+	'error_no_task': 'Unable to find task "{}"',
+	'error_wrong_args': 'Incorrect amount of arguments: {} expects {}',
 	}
 
 
@@ -256,7 +258,6 @@ def task(*args, **kwargs):
 
 		return wrapper
 
-
 def default(func):
 	'''DEPRECATED: Execute this task when bumpy is invoked with no arguments.'''
 	global DEFAULT
@@ -446,8 +447,11 @@ def clean():
 	global GENERATES
 	shell('rm -f ' + ' '.join([key for key in GENERATES]))
 
-def abort(message):
+def abort(message, *args):
 	'''Raise an AbortException, halting task execution and exiting.'''
+	if args:
+		raise _AbortException(message.format(*args))
+
 	raise _AbortException(message)
 
 def clone(task):
@@ -484,14 +488,15 @@ def help():
 			print LOCALE['help_generates'].format(task.generates)
 		if task.defaults:
 			print LOCALE['help_args']
+			for arg in task.expects:
+				print LOCALE['help_arg'].format(arg)
 			for arg in task.defaults:
-				print LOCALE['help_arg'].format(arg, task.defaults[arg])
+				print LOCALE['help_key'].format(arg, task.defaults[arg])
 
 
 # Do everything awesome
 @private
-@method
-def main(self, args):
+def main(args):
 	if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
 		opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
 		opts = _opts_to_dict(*opts)
@@ -503,37 +508,28 @@ def main(self, args):
 	if not args and DEFAULT:
 		DEFAULT()
 	else:
-		if CONFIG['cli']:
-			temp = None
-			if len(args) > 0:
-				temp = _get_task(args[0])
-				if temp:
+		while args:
+			task = _get_task(args[0])
+			if task:
+				args = args[1:]
+
+			if task is None:
+				abort(LOCALE['error_no_task'], args[0])
+
+			kwargs = task.defaults.copy()
+			if task.args:
+				temp_kwargs, args = getopt.getopt(args, '', task.args)
+				temp_kwargs = _opts_to_dict(*temp_kwargs)
+				kwargs.update(temp_kwargs)
+
+			if task.expects:
+				for e in task.expects:
+					if not len(args):
+						abort(LOCALE['error_wrong_args'], task, len(task.expects))
+					kwargs.update({e: args[0]})
 					args = args[1:]
 
-			temp = temp if temp else DEFAULT
-			if temp is None:
-				abort('Unable to find task "{}"'.format(arg))
-
-			kwargs = temp.defaults
-			if temp.args:
-				temp_kwargs, args = getopt.getopt(args, '', temp.args)
-				temp_kwargs = _opts_to_dict(*temp_kwargs)
-				for key in temp_kwargs:
-					kwargs[key] = temp_kwargs[key]
-
-			try:
-				temp(*args, **kwargs)
-			except Exception, ex:
-				temp.valid = False
-				self.__print('abort', temp, ex.message)
-
-		else:
-			for arg in args:
-				temp = _get_task(arg)
-				if temp is None:
-					abort('Unable to find task "{}"'.format(arg))
-
-				temp()
+			task(**kwargs)
 
 	if TEARDOWN:
 		TEARDOWN()
