@@ -79,6 +79,7 @@ def _highlight(string, color):
 		return string
 
 def _taskify(func):
+	'''Convert a function into a task.'''
 	global TASKS
 	if not isinstance(func, _Task):
 		func = _Task(func)
@@ -99,6 +100,7 @@ def _taskify(func):
 	return func
 
 def _tuplify(args):
+	'''Convert a single argument into a tuple, or leave a tuple as-is.'''
 	if not isinstance(args, tuple):
 		args = (args,)
 	return args
@@ -208,7 +210,7 @@ class _Task:
 
 # The decorator
 def task(*args, **kwargs):
-	'''Convert a function into a task.'''
+	'''Register a function as a task, as well as applying any attributes. '''
 
 	# support @task
 	if args and hasattr(args[0], '__call__'):
@@ -235,8 +237,8 @@ def task(*args, **kwargs):
 			if 'method' in args:
 				func.method = True
 
-			if 'requires' in kwargs:
-				func.reqs = _tuplify(kwargs['requires'])
+			if 'reqs' in kwargs:
+				func.reqs = _tuplify(kwargs['reqs'])
 				func.file_reqs = [req for req in func.reqs if type(req) is str]
 				func.task_reqs = [req for req in func.reqs if type(req) is not str]
 
@@ -254,9 +256,7 @@ def task(*args, **kwargs):
 
 # Helper functions
 def require(*reqs):
-	'''Require tasks or files at runtime.
-	Similar to @requires(...), but it can be invoked at runtime rather than at
-	function creation.'''
+	'''Require tasks or files at runtime.'''
 	for req in reqs:
 		if type(req) is str:
 			# does not exist and unknown generator
@@ -331,7 +331,7 @@ def config(**kwargs):
 		CONFIG[key] = kwargs[key]
 
 
-# Default 'help' function
+# bump --help display
 def help():
 	'''Print all available tasks and descriptions.'''
 	for key, task in TASKS.items():
@@ -359,8 +359,9 @@ def help():
 				print LOCALE['help_key'].format(arg, task.defaults[arg])
 
 
-# Do everything awesome
+# Do everything awesome.
 def _invoke(task, args):
+	'''Invoke a task with the appropriate args; return the remaining args.'''
 	kwargs = task.defaults.copy()
 	if task.kwargs:
 		temp_kwargs, args = getopt.getopt(args, '', task.kwargs)
@@ -379,6 +380,7 @@ def _invoke(task, args):
 
 @task('private')
 def main(args):
+	'''Do everything awesome.'''
 	if SETUP:
 		args = _invoke(SETUP, args)
 
