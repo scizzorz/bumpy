@@ -309,9 +309,11 @@ def valid(*things):
 			return False
 	return True
 
-def shell(command):
+def shell(command, *args):
 	'''Pass a command into the shell.'''
-	global CONFIG
+	if args:
+		command = command.format(args)
+
 	if 'shell' not in CONFIG['suppress']:
 		print LOCALE['shell'].format(command)
 
