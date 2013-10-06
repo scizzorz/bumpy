@@ -82,9 +82,9 @@ def _taskify(func):
 		func = _Task(func)
 
 		spec = inspect.getargspec(func.func)
-		if spec.args and spec.defaults:
+		if spec.args:
 			num_args = len(spec.args)
-			num_kwargs = len(spec.defaults)
+			num_kwargs = len(spec.defaults or [])
 			isflag = lambda x, y: '' if x.defaults[y] is False else '='
 
 			func.args = spec.args[:(num_args - num_kwargs)]
