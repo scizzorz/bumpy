@@ -1,4 +1,4 @@
-import copy, getopt, inspect, os, subprocess, sys, time
+import getopt, inspect, os, subprocess, sys, time
 
 __version__ = '0.4.0'
 
@@ -198,37 +198,6 @@ class _Task:
 		'''Concatenate the aliases tuple into a string.'''
 		return ', '.join(x.__repr__() for x in self.aliases)
 
-class _Generic:
-	'''An anonymous wrapper around another task.
-	All methods return a reference to this object so that they can be linked.'''
-	def __init__(self, func):
-		'''Initialize the task with a deep copy and mark @private and @method.'''
-		self.task = task(copy.deepcopy(func))
-		method(self.task)
-		private(self.task)
-
-	def default(self):
-		default(self.task)
-		return self
-	def setup(self):
-		setup(self.task)
-		return self
-	def teardown(self):
-		teardown(self.task)
-		return self
-	def suppress(self, *messages):
-		suppress(*messages)(self.task)
-		return self
-	def requires(self, *reqs):
-		requires(*reqs)(self.task)
-		return self
-	def args(self, **opts):
-		args(**opts)(self.task)
-		return self
-	def generates(self, target):
-		generates(target)(self.task)
-		return self
-
 
 # The decorator
 def task(*args, **kwargs):
@@ -253,10 +222,10 @@ def task(*args, **kwargs):
 			if 'teardown' in args:
 				TEARDOWN = func
 
-			if ('private' in args or 'generic' in args) and func.fullname in TASKS:
+			if 'private' in args and func.fullname in TASKS:
 				del TASKS[func.fullname]
 
-			if ('method' in args or 'generic' in args):
+			if 'method' in args:
 				func.method = True
 
 			if 'requires' in kwargs:
@@ -351,10 +320,6 @@ def abort(message, *args):
 		raise _AbortException(message.format(*args))
 
 	raise _AbortException(message)
-
-def clone(task):
-	'''Return a Generic linked to a task.'''
-	return _Generic(task)
 
 def config(**kwargs):
 	'''Set bumpy configuration values.'''
