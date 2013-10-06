@@ -8,11 +8,8 @@ CONFIG = {
 	'color_invalid': 4,
 	'color_success': 2,
 	'color_fail': 1,
-
 	'abbrev': True,
 	'suppress': (),
-	'options': '',
-	'long_options': [],
 	}
 
 
@@ -46,7 +43,6 @@ GENERATES = {}
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
-OPTIONS = None
 
 
 # Private helpers
@@ -215,9 +211,6 @@ class _Generic:
 	def teardown(self):
 		teardown(self.task)
 		return self
-	def options(self):
-		options(self.task)
-		return self
 	def suppress(self, *messages):
 		suppress(*messages)(self.task)
 		return self
@@ -279,14 +272,6 @@ def teardown(func):
 	TEARDOWN = func
 	return func
 
-def options(func):
-	'''DEPRECTAED: Execute this task after processing option flags.
-	Must accept **kwargs as a parameter.'''
-	global OPTIONS
-	func = _taskify(func)
-	OPTIONS = func
-	return func
-
 def private(func):
 	'''DEPRECTAED: Remove this task from the task index.
 	This will prevent it from being iterated over, and subsequently will hide it
@@ -312,14 +297,12 @@ def generic(func):
 
 def attributes(*attrs):
 	'''DEPRECTAED: Apply multiple attributes to this task.
-	Attributes include default, setup, teardown, options, private, method,
-	and generic.'''
+	Attributes include default, setup, teardown, private, method, and generic.'''
 	def wrapper(func):
 		func = _taskify(func)
 		if 'default' in attrs: default(func)
 		if 'setup' in attrs: setup(func)
 		if 'teardown' in attrs: teardown(func)
-		if 'options' in attrs: options(func)
 		if 'private' in attrs: private(func)
 		if 'method' in attrs: method(func)
 		if 'generic' in attrs: generic(func)
@@ -354,23 +337,13 @@ def requires(*requirements):
 		return func
 	return wrapper
 
-def args(**opts):
-	'''DEPRECTAED: Indicates that this task should accept command line options.'''
-	def wrapper(func):
-		func = _taskify(func)
-		func.args = [key + ('=' if opts[key] is not None else '') for key in opts]
-		func.defaults = opts
-		return func
-	return wrapper
-
 def alias(*aliases):
 	'''DEPRECTAED: Allow this task to be looked up under other names.'''
 	def wrapper(func):
 		global TASKS
 		func = _taskify(func)
 		func.aliases = aliases
-		for alias in aliases:
-			TASKS[alias] = func
+		TASKS.update({alias: func for alias in aliases})
 		return func
 	return wrapper
 
@@ -495,41 +468,37 @@ def help():
 
 
 # Do everything awesome
+def _invoke(task, args):
+	kwargs = task.defaults.copy()
+	if task.args:
+		temp_kwargs, args = getopt.getopt(args, '', task.args)
+		temp_kwargs = _opts_to_dict(*temp_kwargs)
+		kwargs.update(temp_kwargs)
+
+	if task.expects:
+		for e in task.expects:
+			if not len(args):
+				abort(LOCALE['error_wrong_args'], task, len(task.expects))
+			kwargs.update({e: args[0]})
+			args = args[1:]
+
+	task(**kwargs)
+	return args
+
 @private
 def main(args):
-	if OPTIONS and (CONFIG['options'] or CONFIG['long_options']):
-		opts, args = getopt.getopt(args, CONFIG['options'], CONFIG['long_options'])
-		opts = _opts_to_dict(*opts)
-		OPTIONS(**opts)
-
 	if SETUP:
-		SETUP()
+		args = _invoke(SETUP, args)
 
 	if not args and DEFAULT:
 		DEFAULT()
 	else:
 		while args:
 			task = _get_task(args[0])
-			if task:
-				args = args[1:]
-
 			if task is None:
 				abort(LOCALE['error_no_task'], args[0])
 
-			kwargs = task.defaults.copy()
-			if task.args:
-				temp_kwargs, args = getopt.getopt(args, '', task.args)
-				temp_kwargs = _opts_to_dict(*temp_kwargs)
-				kwargs.update(temp_kwargs)
-
-			if task.expects:
-				for e in task.expects:
-					if not len(args):
-						abort(LOCALE['error_wrong_args'], task, len(task.expects))
-					kwargs.update({e: args[0]})
-					args = args[1:]
-
-			task(**kwargs)
+			args = _invoke(task, args[1:])
 
 	if TEARDOWN:
 		TEARDOWN()
