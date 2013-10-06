@@ -1,4 +1,4 @@
-import getopt, inspect, os, subprocess, sys, time
+import getopt, inspect, os, subprocess, sys, time, traceback
 
 __version__ = '0.4.0'
 
@@ -34,6 +34,7 @@ LOCALE = {
 	'shell': '$ {}',
 	'error_no_task': 'Unable to find task "{}"',
 	'error_wrong_args': 'Incorrect amount of arguments: {} expects {}',
+	'error_unknown': 'Unknown error',
 	}
 
 
@@ -153,9 +154,17 @@ class _Task:
 				self.func(self, *args, **kwargs)
 			else:
 				self.func(*args, **kwargs)
+
 		except Exception, ex:
 			self.valid = False
-			self.__print('abort', self, ex.message)
+			if ex.message:
+				self.__print('abort', self, ex.message)
+			elif ex.msg:
+				self.__print('abort', self, ex.msg)
+			else:
+				self.__print('abort', self, LOCALE['error_unknown'])
+				traceback.print_exc()
+
 		else:
 			self.valid = True
 			self.__print('leave', self)
