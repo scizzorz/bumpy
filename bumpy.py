@@ -300,7 +300,7 @@ def valid(*things):
 def shell(command, *args):
 	'''Pass a command into the shell.'''
 	if args:
-		command = command.format(args)
+		command = command.format(*args)
 
 	print LOCALE['shell'].format(command)
 
