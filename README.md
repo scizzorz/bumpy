@@ -253,8 +253,7 @@ $ bump db.init
 Initialize database
 ```
 
-By default, any tasks in your `build.py` or `bum.py` file will be included in the global namespace. Bumpy will also search for a `bump/` directory and import any modules it finds there, giving each task found an appropriate namespace based on its module name. Lastly, if you `import` any modules from your `build.py` or `bum.py`, tasks in those modules will also be given an appropriate namespace.
-
+When bumpy fires up, it searches for modules in a `bump/` directory and imports them, assigning each an appropriate namespace. If you want tasks to be in the global namespace, add them to `bump/__bumpy_main__.py`, `bum.py`, or `build.py`, only the first of which will be imported. If tasks in one namespace depend on tasks in another, you can use Python's `import` to import their containing module.
 
 ### CLI
 
