@@ -27,8 +27,8 @@ LOCALE = {
 	'help_arg': '\t\t<{}>',
 	'help_key': '\t\t--{} = {}',
 	'help_command': '{}{}: {}',
-	'help_generates': '\tgenerates: {!r}',
-	'help_requires': '\trequires: {}',
+	'help_gens': '\tgenerates: {!r}',
+	'help_reqs': '\trequires: {}',
 	'help_unknown': 'unknown task: {}',
 	'leave': 'leave {}',
 	'shell': '$ {}',
@@ -85,12 +85,12 @@ def _taskify(func):
 		spec = inspect.getargspec(func.func)
 		if spec.args and spec.defaults:
 			num_args = len(spec.args)
-			num_keys = len(spec.defaults)
+			num_kwargs = len(spec.defaults)
 			isflag = lambda x, y: '' if x.defaults[y] is False else '='
 
-			func.expects = spec.args[:(num_args - num_keys)]
-			func.defaults = {spec.args[i - num_keys]: spec.defaults[i] for i in range(num_keys)}
-			func.args = [key + isflag(func, key) for key in func.defaults]
+			func.args = spec.args[:(num_args - num_kwargs)]
+			func.defaults = {spec.args[i - num_kwargs]: spec.defaults[i] for i in range(num_kwargs)}
+			func.kwargs = [key + isflag(func, key) for key in func.defaults]
 
 		if not func.name.startswith('_'):
 			TASKS[func.name] = func
@@ -114,13 +114,13 @@ class _Task:
 	suppress = ()
 
 	args = []
+	kwargs = []
 	defaults = {}
-	expects = []
 
-	requirements = ()
-	file_requirements = ()
-	task_requirements = ()
-	generates = None
+	reqs = ()
+	file_reqs = ()
+	task_reqs = ()
+	gens = None
 
 	valid = None
 	method = False
@@ -134,14 +134,14 @@ class _Task:
 	def __call__(self, *args, **kwargs):
 		'''Invoke the wrapped function after meeting all requirements.'''
 		try:
-			require(*self.requirements)
+			require(*self.reqs)
 
-			if self.requirements and self.generates:
-				self.__print('enter_genreq', self, self.generates, self.reqstr())
-			elif self.requirements:
+			if self.reqs and self.gens:
+				self.__print('enter_genreq', self, self.gens, self.reqstr())
+			elif self.reqs:
 				self.__print('enter_req', self, self.reqstr())
-			elif self.generates:
-				self.__print('enter_gen', self, self.generates)
+			elif self.gens:
+				self.__print('enter_gen', self, self.gens)
 			else:
 				self.__print('enter', self)
 
@@ -187,7 +187,7 @@ class _Task:
 
 	def reqstr(self):
 		'''Concatenate the requirements tuple into a string.'''
-		return ', '.join(x.__repr__() for x in self.requirements)
+		return ', '.join(x.__repr__() for x in self.reqs)
 
 	def aliasstr(self):
 		'''Concatenate the aliases tuple into a string.'''
@@ -214,8 +214,8 @@ class _Generic:
 	def suppress(self, *messages):
 		suppress(*messages)(self.task)
 		return self
-	def requires(self, *requirements):
-		requires(*requirements)(self.task)
+	def requires(self, *reqs):
+		requires(*reqs)(self.task)
 		return self
 	def args(self, **opts):
 		args(**opts)(self.task)
@@ -225,7 +225,7 @@ class _Generic:
 		return self
 
 
-# Decorators | attributes
+# The decorator
 def task(*args, **kwargs):
 	'''Convert a function into a task.'''
 
@@ -236,132 +236,50 @@ def task(*args, **kwargs):
 	# as well as @task(), @task('default'), etc.
 	else:
 		def wrapper(func):
+			global TASKS, GENERATES, DEFAULT, SETUP, TEARDOWN
 			func = _taskify(func)
-			func = attributes(*args)(func)
+
+			if 'default' in args:
+				DEFAULT = func
+
+			if 'setup' in args:
+				SETUP = func
+
+			if 'teardown' in args:
+				TEARDOWN = func
+
+			if ('private' in args or 'generic' in args) and func.name in TASKS:
+				del TASKS[func.name]
+
+			if ('method' in args or 'generic' in args):
+				func.method = True
+
 			if 'requires' in kwargs:
-				requires(*_tuplify(kwargs['requires']))(func)
-			if 'generates' in kwargs:
-				generates(kwargs['generates'])(func)
+				func.reqs = _tuplify(kwargs['requires'])
+				func.file_reqs = [req for req in func.reqs if type(req) is str]
+				func.task_reqs = [req for req in func.reqs if type(req) is not str]
+
+			if 'gens' in kwargs:
+				func.gens = kwargs['gens']
+
 			if 'alias' in kwargs:
-				alias(*_tuplify(kwargs['alias']))(func)
+				func.aliases = _tuplify(kwargs['alias'])
+				TASKS.update({alias: func for alias in func.aliases})
+
 			if 'suppress' in kwargs:
-				suppress(*_tuplify(kwargs['suppress']))(func)
+				func.suppress = _tuplify(kwargs['suppress'])
 
 			return func
 
 		return wrapper
 
-def default(func):
-	'''DEPRECATED: Execute this task when bumpy is invoked with no arguments.'''
-	global DEFAULT
-	func = _taskify(func)
-	DEFAULT = func
-	return func
-
-def setup(func):
-	'''DEPRECTAED: Execute this task before all other tasks.'''
-	global SETUP
-	func = _taskify(func)
-	SETUP = func
-	return func
-
-def teardown(func):
-	'''DEPRECTAED: Execute this task after all other tasks.'''
-	global TEARDOWN
-	func = _taskify(func)
-	TEARDOWN = func
-	return func
-
-def private(func):
-	'''DEPRECTAED: Remove this task from the task index.
-	This will prevent it from being iterated over, and subsequently will hide it
-	from the help task.'''
-	global TASKS
-	func = _taskify(func)
-	if func.name in TASKS:
-		del TASKS[func.name]
-	return func
-
-def method(func):
-	'''DEPRECTAED: Explicitly pass the task into itself as a parameter.'''
-	func = _taskify(func)
-	func.method = True
-	return func
-
-def generic(func):
-	'''DEPRECTAED: Alias combination for @method and @private.'''
-	func = _taskify(func)
-	method(func)
-	private(func)
-	return func
-
-def attributes(*attrs):
-	'''DEPRECTAED: Apply multiple attributes to this task.
-	Attributes include default, setup, teardown, private, method, and generic.'''
-	def wrapper(func):
-		func = _taskify(func)
-		if 'default' in attrs: default(func)
-		if 'setup' in attrs: setup(func)
-		if 'teardown' in attrs: teardown(func)
-		if 'private' in attrs: private(func)
-		if 'method' in attrs: method(func)
-		if 'generic' in attrs: generic(func)
-		return func
-	return wrapper
-
-
-# Decorators | configuration
-def generates(target):
-	'''DEPRECTAED: Indicates that this task will produce an output file.
-	This is used for file-based dependency chains as well as recording which
-	files can be erased by clean().'''
-	def wrapper(func):
-		global GENERATES
-		func = _taskify(func)
-		func.generates = target
-		GENERATES[target] = func
-		return func
-	return wrapper
-
-def requires(*requirements):
-	'''DEPRECTAED: Indicates that this task depends on something.
-	Requirements can either be an external filename or another task. Task
-	requirements will be executed before execution of this task. File
-	requirements will be generated if they can be looked up in the
-	generator table; otherwise, missing files will cause the task to fail.'''
-	def wrapper(func):
-		func = _taskify(func)
-		func.requirements = requirements
-		func.file_requirements = [req for req in requirements if type(req) is str]
-		func.task_requirements = [req for req in requirements if type(req) is not str]
-		return func
-	return wrapper
-
-def alias(*aliases):
-	'''DEPRECTAED: Allow this task to be looked up under other names.'''
-	def wrapper(func):
-		global TASKS
-		func = _taskify(func)
-		func.aliases = aliases
-		TASKS.update({alias: func for alias in aliases})
-		return func
-	return wrapper
-
-def suppress(*messages):
-	'''DEPRECTAED: Indicate what types of messages this task should not print.'''
-	def wrapper(func):
-		func = _taskify(func)
-		func.suppress = messages
-		return func
-	return wrapper
-
 
 # Helper functions
-def require(*requirements):
+def require(*reqs):
 	'''Require tasks or files at runtime.
 	Similar to @requires(...), but it can be invoked at runtime rather than at
 	function creation.'''
-	for req in requirements:
+	for req in reqs:
 		if type(req) is str:
 			# does not exist and unknown generator
 			if not os.path.exists(req) and req not in GENERATES:
@@ -438,8 +356,7 @@ def config(**kwargs):
 
 
 # Default 'help' function
-@default
-@suppress('enter', 'leave')
+@task('default', suppress=('enter', 'leave'))
 def help():
 	'''Print all available tasks and descriptions.'''
 	for key, task in TASKS.items():
@@ -455,13 +372,13 @@ def help():
 
 		if task.aliases:
 			print LOCALE['help_aliases'].format(task.aliasstr())
-		if task.requirements:
-			print LOCALE['help_requires'].format(task.reqstr())
-		if task.generates:
-			print LOCALE['help_generates'].format(task.generates)
+		if task.reqs:
+			print LOCALE['help_reqs'].format(task.reqstr())
+		if task.gens:
+			print LOCALE['help_gens'].format(task.gens)
 		if task.defaults:
 			print LOCALE['help_args']
-			for arg in task.expects:
+			for arg in task.args:
 				print LOCALE['help_arg'].format(arg)
 			for arg in task.defaults:
 				print LOCALE['help_key'].format(arg, task.defaults[arg])
@@ -470,22 +387,22 @@ def help():
 # Do everything awesome
 def _invoke(task, args):
 	kwargs = task.defaults.copy()
-	if task.args:
-		temp_kwargs, args = getopt.getopt(args, '', task.args)
+	if task.kwargs:
+		temp_kwargs, args = getopt.getopt(args, '', task.kwargs)
 		temp_kwargs = _opts_to_dict(*temp_kwargs)
 		kwargs.update(temp_kwargs)
 
-	if task.expects:
-		for e in task.expects:
+	if task.args:
+		for e in task.args:
 			if not len(args):
-				abort(LOCALE['error_wrong_args'], task, len(task.expects))
+				abort(LOCALE['error_wrong_args'], task, len(task.args))
 			kwargs.update({e: args[0]})
 			args = args[1:]
 
 	task(**kwargs)
 	return args
 
-@private
+@task('private')
 def main(args):
 	if SETUP:
 		args = _invoke(SETUP, args)
