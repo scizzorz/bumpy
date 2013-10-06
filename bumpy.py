@@ -23,7 +23,7 @@ LOCALE = {
 	'enter_genreq': 'enter {} -> {!r} <- {}',
 	'enter_req': 'enter {} <- {}',
 	'help_aliases': '\taliases: {}',
-	'help_args': '\targuments:',
+	'help_args': '\tusage: {}{}{}',
 	'help_arg': '\t\t<{}>',
 	'help_key': '\t\t--{} = {}',
 	'help_command': '{}{}: {}',
@@ -207,6 +207,16 @@ class _Task:
 		'''Concatenate the aliases tuple into a string.'''
 		return ', '.join(x.__repr__() for x in self.aliases)
 
+	def kwargstr(self):
+		'''Concatenate keyword arguments into a string.'''
+		temp = [' [--' + k + (' ' + str(v) if v is not False else '') + ']' for k,v in self.defaults.items()]
+		return ''.join(temp)
+
+	def argstr(self):
+		'''Concatenate arguments into a string.'''
+		return ''.join(' ' + arg for arg in self.args).upper()
+
+
 
 # The decorator
 def task(*args, **kwargs):
@@ -332,7 +342,7 @@ def config(**kwargs):
 
 
 # bump --help display
-def help():
+def _help():
 	'''Print all available tasks and descriptions.'''
 	for key, task in TASKS.items():
 		tags = ''
@@ -352,11 +362,7 @@ def help():
 		if task.gens:
 			print LOCALE['help_gens'].format(task.gens)
 		if task.defaults:
-			print LOCALE['help_args']
-			for arg in task.args:
-				print LOCALE['help_arg'].format(arg)
-			for arg in task.defaults:
-				print LOCALE['help_key'].format(arg, task.defaults[arg])
+			print LOCALE['help_args'].format(task.fullname, task.kwargstr(), task.argstr())
 
 
 # Do everything awesome.
