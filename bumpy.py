@@ -155,9 +155,9 @@ class _Task:
 
 		except Exception, ex:
 			self.valid = False
-			if ex.message:
+			if getattr(ex, 'message', None):
 				self.__print('abort', self, ex.message)
-			elif ex.msg:
+			elif getattr(ex, 'msg', None):
 				self.__print('abort', self, ex.msg)
 			else:
 				self.__print('abort', self, LOCALE['error_unknown'])
