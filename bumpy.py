@@ -8,7 +8,6 @@ CONFIG = {
 	'color_invalid': 4,
 	'color_success': 2,
 	'color_fail': 1,
-	'suppress': (),
 	}
 
 
@@ -43,6 +42,7 @@ GENERATES = dict()
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
+VERBOSE = False
 
 
 # Private helpers
@@ -136,14 +136,15 @@ class _Task:
 		try:
 			require(*self.reqs)
 
-			if self.reqs and self.gens:
-				self.__print('enter_genreq', self, self.gens, self.reqstr())
-			elif self.reqs:
-				self.__print('enter_req', self, self.reqstr())
-			elif self.gens:
-				self.__print('enter_gen', self, self.gens)
-			else:
-				self.__print('enter', self)
+			if VERBOSE:
+				if self.reqs and self.gens:
+					self.__print('enter_genreq', self, self.gens, self.reqstr())
+				elif self.reqs:
+					self.__print('enter_req', self, self.reqstr())
+				elif self.gens:
+					self.__print('enter_gen', self, self.gens)
+				else:
+					self.__print('enter', self)
 
 			if self.method:
 				self.func(self, *args, **kwargs)
@@ -162,7 +163,8 @@ class _Task:
 
 		else:
 			self.valid = True
-			self.__print('leave', self)
+			if VERBOSE:
+				self.__print('leave', self)
 
 		return self.valid
 
@@ -178,10 +180,7 @@ class _Task:
 		return _highlight('[' + self.ns + self.name + ']', color)
 
 	def __print(self, msg, *args):
-		'''Print a message if it's not suppressed.'''
-		if 'all' in CONFIG['suppress'] or msg in CONFIG['suppress']:
-			return
-
+		'''Print a formatted message.'''
 		print LOCALE[msg].format(*args)
 
 	def match(self, name):

@@ -23,6 +23,9 @@ if __name__ == '__main__':
 			args = args[2:]
 		elif args[0] in ('--help', '-h'):
 			show_help = True
+		elif args[0] in ('--verbose', '-v'):
+			bumpy.VERBOSE = True
+			args = args[1:]
 
 	_import('bum.py')
 	_import('build.py')
