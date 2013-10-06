@@ -9,14 +9,17 @@ def _import(filename, module='__bumpy_main__'):
 if __name__ == '__main__':
 	module = None
 	args = sys.argv[1:]
+	help = False
 
 	if len(args):
 		if args[0] == '--version':
 			print 'bumpy v' + bumpy.__version__
 			sys.exit()
 		elif args[0] in ('--file', '-f'):
-			module = _import(args[1])
+			_import(args[1])
 			args = args[2:]
+		elif args[0] in ('--help', '-h'):
+			help = True
 
 	_import('bum.py')
 	_import('build.py')
@@ -27,4 +30,4 @@ if __name__ == '__main__':
 			if ext != '.py': continue
 			_import(os.path.join('bump', filename), basename)
 
-	bumpy.main(args)
+	bumpy.help() if help else bumpy.main(args)

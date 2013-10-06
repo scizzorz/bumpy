@@ -111,7 +111,6 @@ class _AbortException(Exception):
 class _Task:
 	'''A wrapper around a function that contains bumpy-specific information.'''
 	aliases = ()
-	suppress = ()
 
 	args = []
 	kwargs = []
@@ -176,7 +175,6 @@ class _Task:
 
 	def __print(self, id, *args):
 		'''Print a message if it's not suppressed.'''
-		if 'all' in self.suppress or id in self.suppress: return
 		if 'all' in CONFIG['suppress'] or id in CONFIG['suppress']: return
 
 		print LOCALE[id].format(*args)
@@ -239,9 +237,6 @@ def task(*args, **kwargs):
 			if 'alias' in kwargs:
 				func.aliases = _tuplify(kwargs['alias'])
 				TASKS.update({alias: func for alias in func.aliases})
-
-			if 'suppress' in kwargs:
-				func.suppress = _tuplify(kwargs['suppress'])
 
 			return func
 
@@ -328,7 +323,6 @@ def config(**kwargs):
 
 
 # Default 'help' function
-@task('default', suppress=('enter', 'leave'))
 def help():
 	'''Print all available tasks and descriptions.'''
 	for key, task in TASKS.items():
