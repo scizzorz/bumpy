@@ -1,6 +1,7 @@
 import getopt, inspect, os, subprocess, time, traceback
 
-__version__ = '0.4.0'
+__version_info__ = (0, 4, 1)
+__version__ = '.'.join(map(str, __version_info__))
 
 # Configuration settings
 CONFIG = {
@@ -82,9 +83,9 @@ def _taskify(func):
 		func = _Task(func)
 
 		spec = inspect.getargspec(func.func)
-		if spec.args and spec.defaults:
+		if spec.args:
 			num_args = len(spec.args)
-			num_kwargs = len(spec.defaults)
+			num_kwargs = len(spec.defaults or [])
 			isflag = lambda x, y: '' if x.defaults[y] is False else '='
 
 			func.args = spec.args[:(num_args - num_kwargs)]
@@ -154,9 +155,9 @@ class _Task:
 
 		except Exception, ex:
 			self.valid = False
-			if ex.message:
+			if getattr(ex, 'message', None):
 				self.__print('abort', self, ex.message)
-			elif ex.msg:
+			elif getattr(ex, 'msg', None):
 				self.__print('abort', self, ex.msg)
 			else:
 				self.__print('abort', self, LOCALE['error_unknown'])
