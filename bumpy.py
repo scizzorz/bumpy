@@ -1,6 +1,6 @@
 import getopt, inspect, os, subprocess, time, traceback
 
-__version_info__ = (0, 4, 1)
+__version_info__ = (0, 4, 2)
 __version__ = '.'.join(map(str, __version_info__))
 
 # Configuration settings
@@ -300,7 +300,7 @@ def valid(*things):
 def shell(command, *args):
 	'''Pass a command into the shell.'''
 	if args:
-		command = command.format(args)
+		command = command.format(*args)
 
 	print LOCALE['shell'].format(command)
 
@@ -353,7 +353,7 @@ def _help():
 			print LOCALE['help_reqs'].format(task.reqstr())
 		if task.gens:
 			print LOCALE['help_gens'].format(task.gens)
-		if task.defaults:
+		if task.args or task.defaults:
 			print LOCALE['help_args'].format(task.ns + task.name, task.kwargstr(), task.argstr())
 
 

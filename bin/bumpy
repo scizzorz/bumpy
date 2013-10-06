@@ -4,10 +4,14 @@ import bumpy
 
 if '.' not in sys.path:
 	sys.path.append('.')
+if 'bump' not in sys.path:
+	sys.path.append('bump')
 
 def _import(filename, module='__bumpy_main__'):
-	if os.path.exists(filename):
-		return imp.load_source(module, filename)
+	if os.path.exists(filename) and module not in sys.modules:
+		sys.modules[module] = imp.load_source(module, filename)
+		return sys.modules[module]
+
 
 if __name__ == '__main__':
 	module = None
