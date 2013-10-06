@@ -2,9 +2,9 @@
 import getopt, imp, os, sys
 import bumpy
 
-def inc(filename):
+def _import(filename, module='__bumpy_main__'):
 	if os.path.exists(filename):
-		return imp.load_source('build', filename)
+		return imp.load_source(module, filename)
 
 if __name__ == '__main__':
 	module = None
@@ -15,12 +15,16 @@ if __name__ == '__main__':
 			print 'bumpy v' + bumpy.__version__
 			sys.exit()
 		elif args[0] in ('--file', '-f'):
-			module = inc(args[1])
+			module = _import(args[1])
 			args = args[2:]
 
-	module = module or inc('bum.py') or inc('build.py')
+	_import('bum.py')
+	_import('build.py')
 
-	if not module:
-		print 'Unable to load a proper bumpfile'
-	else:
-		bumpy.main(args)
+	if os.path.exists('bump'):
+		for filename in os.listdir('bump'):
+			basename, ext = os.path.splitext(filename)
+			if ext != '.py': continue
+			_import(os.path.join('bump', filename), basename)
+
+	bumpy.main(args)

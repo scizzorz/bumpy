@@ -93,14 +93,14 @@ def _taskify(func):
 			func.kwargs = [key + isflag(func, key) for key in func.defaults]
 
 		if not func.name.startswith('_'):
-			TASKS[func.name] = func
+			TASKS[func.fullname] = func
+
 	return func
 
 def _tuplify(args):
 	if not isinstance(args, tuple):
 		args = (args,)
 	return args
-
 
 # Private classes
 class _AbortException(Exception):
@@ -130,6 +130,11 @@ class _Task:
 		self.func = func
 		self.name = func.__name__
 		self.help = func.__doc__
+		self.mod = inspect.getmodule(func).__name__
+		if self.mod == '__bumpy_main__':
+			self.fullname = self.name
+		else:
+			self.fullname = self.mod + '.' + self.name
 
 	def __call__(self, *args, **kwargs):
 		'''Invoke the wrapped function after meeting all requirements.'''
@@ -167,7 +172,7 @@ class _Task:
 		elif self.valid == False:
 			color = CONFIG['color_fail']
 
-		return _highlight('[' + self.name + ']', color)
+		return _highlight('[' + self.fullname + ']', color)
 
 	def __print(self, id, *args):
 		'''Print a message if it's not suppressed.'''
@@ -178,7 +183,7 @@ class _Task:
 
 	def match(self, name):
 		'''Compare an argument string to the task name.'''
-		if self.name.startswith(name):
+		if self.fullname.startswith(name):
 			return True
 
 		for alias in self.aliases:
@@ -248,8 +253,8 @@ def task(*args, **kwargs):
 			if 'teardown' in args:
 				TEARDOWN = func
 
-			if ('private' in args or 'generic' in args) and func.name in TASKS:
-				del TASKS[func.name]
+			if ('private' in args or 'generic' in args) and func.fullname in TASKS:
+				del TASKS[func.fullname]
 
 			if ('method' in args or 'generic' in args):
 				func.method = True
