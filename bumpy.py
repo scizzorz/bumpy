@@ -301,8 +301,7 @@ def shell(command, *args):
 	if args:
 		command = command.format(args)
 
-	if 'shell' not in CONFIG['suppress']:
-		print LOCALE['shell'].format(command)
+	print LOCALE['shell'].format(command)
 
 	try:
 		return subprocess.check_output(command, shell=True)

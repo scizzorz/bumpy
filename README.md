@@ -2,7 +2,7 @@
 
 **Simplify repetitive project tasks with Python.**
 
-Bumpy aims to provide a simple and effective way to collect and automate build, test, and deploy tasks. In order to leverage Python's powerful syntax while still maintaining a minimal and readable build file, Bumpy includes several helper functions to reduce the amount of code and clutter your build files need to include without sacrificing functionality.
+Bumpy aims to provide a simple and effective way to collect and automate build, test, and deploy tasks. In order to leverage Python's powerful syntax while still maintaining a minimal and readable build file, Bumpy includes several helper functions to reduce the amount of code and clutter your build files need to include without sacrificing functionality. In addition, Bumpy requires only built-in Python libraries - that means no external dependencies!
 
 Bumpy is derived from [pynt](https://github.com/rags/pynt), and by extension, [microbuild](https://github.com/CalumJEadie/microbuild).
 
@@ -11,254 +11,259 @@ Bumpy is derived from [pynt](https://github.com/rags/pynt), and by extension, [m
 Bumpy is simple to use. Just open a `bum.py` file, define your tasks, and run `bump` in the same directory.
 
 ```python
-from bumpy import task
+import bumpy as b
 
-@task
-def compile():
-	'''Compiles ALL THE CODE.'''
-	print 'Compiling...'
+@b.task
+def build():
+	'''Builds ALL THE CODE.'''
+	print 'Building'
 ```
 
 ```bash
-$ bump compile
-execute [compile]
-Compiling...
-finish [compile]
+$ bump build
+Building
 ```
 
 ### API
 
-Bumpy uses Python decorators to record and manipulate your tasks.
+Bumpy provides a simple function decorator to register and track your tasks, as well as several helper functions to make your life easier when interfacing with shell commands and files.
 
-*(all of the given examples can be found in the included `bum.py`)*
+#### Tasks
 
-#### Decorators
-
-##### `@task`
-
-Registers a function as a Bumpy task. The function name is used to invoke tasks through `bump`.
-
-All other decorators will automatically register a function as a task, so you only need to use `@task` when you have no other decorators.
+In order to convert your lovely functions into a Bumpy task, it's as simple as applying the `@task` decorator:
 
 ```python
-@task
-def example():
-	'''This is an example task.'''
-	print 'Running the example!'
+import bumpy as b
+
+@b.task
+def build():
+	'''Builds ALL THE CODE.'''
+	print 'Building'
+```
+
+The function name will be used as the task name. The docstring will be saved and used for the built-in help. Any arguments or keyword arguments will be parsed and registered as CLI flags.
+
+---
+
+Prerequisite tasks / files can be specified with an optional `reqs` keyword argument to `@task`:
+
+```python
+@b.task(reqs=build)
+def run():
+	print 'Running'
+```
+
+`reqs` can be a single requirement or a tuple of requirements. A dependency will only be executed the first time it's required, although it may be explicitly executed multiple times via the command line:
+
+```bash
+$ bump run
+Building
+Running
+$ bump build run
+Building
+Running
+$ bump build build run
+Building
+Building
+Running
+```
+
+`str` requirements will be interpreted as files / paths.
+
+---
+
+Generated files can be specified with an optional `gens` keyword argument:
+
+```python
+@b.task(gens='docs')
+def docs():
+	print 'Documenting'
+```
+
+Generated files will be saved and can be automatically deleted with Bumpy's `clean()` helper function. Generated files will also be used to look up file-based dependency chains.
+
+---
+
+Task aliases can be specified with an optional `alias` keyword argument:
+
+```python
+@b.task(alias='pkg', reqs=(build, docs))
+def package():
+	print 'Packaging'
+```
+
+`alias` can be a single alias or a tuple of aliases.
+
+---
+
+A task can be set as the 'default' task, ie the task that Bumpy will invoke if no arguments are provided, by providing `'default'` as an optional argument:
+
+```python
+@b.task('default'):
+def build():
+	print 'Building'
 ```
 
 ---
 
-##### `@requires(*reqs)`
-
-Indicates that a task depends on other tasks to be executed beforehand. Bumpy will resolve any dependencies automatically and will try to minimize repeating a task unless explicitly requested. You can also require that a file exists by providing its path as a string.
+A task can be set as the 'setup' task, ie the task that Bumpy will invoke prior to any other tasks, by providing `'setup'` as an optional argument:
 
 ```python
-@requires(example)
-def dependency():
-	'''This is an example task with a dependency.'''
-	print 'I bet example() was executed before me.'
+@b.task('setup')
+def setup():
+	print 'Setting stuff up'
+```
 
-@requires('name.txt', dependency)
-def hello():
-	'''This is an example task with a file dependency.'''
-	print 'Hello! My name is ' + open('name.txt').read().strip()
-	print 'Darn. How do those two always get executed before me?!'
+Setup tasks can also accept arguments. More on this later!
+
+---
+
+Similar to 'setup' tasks, 'teardown' tasks are invoked after every other task, just before exiting:
+
+```python
+@b.task('teardown')
+def teardown():
+	print 'Tearing stuff down'
 ```
 
 ---
 
-##### `@generates(target)`
-
-Indicates that a task will produce a specific file. Bumpy will use this to resolve file dependencies; if task A requires file B, Bumpy will look up which task will generate file B and then invoke it. Bumpy will also record all files that are generated and can automatically clean them up.
+A task can be removed from the lookup table by adding a `'private'` optional argument or by prefixing its name with an underscore:
 
 ```python
-@generates('name.txt')
-def whoami():
-	'''This is an example task that generates a file.'''
-	open('name.txt', 'w').write('Bumpy Bill\n')
+@b.task('setup', 'private'):
+def setup():
+	print 'Setting stuff up'
+
+@b.ask('teardown')
+def _teardown():
+	print 'Tearing stuff down'
+```
+
+Private tasks can still be required and executed, but cannot be invoked from the command line and will not be included in the built-in help.
+
+---
+
+A task can grab a reference to itself by adding a `'method'` optional argument:
+
+```python
+@b.task('method', gens='output.txt')
+def output(self):
+	print 'Generating {}'.format(self.gens)
 ```
 
 ---
 
-##### `@alias(*alts)`
-
-Registers a task with multiple names that can be used interchangeably with `bump`.
+Function arguments / keyword arguments will be converted into command-line flags and options.
 
 ```python
-@alias('list', 'show')
-def view():
-	'''This is an example task with some aliases.'''
-	print 'I think I can be invoked with view, list, OR show!'
+@b.task
+def docs(modules, format='markdown'):
+	print 'Documenting {!r} as {}'.format(modules, format)
 ```
 
----
+Which can then be invoked like this:
 
-##### `@default`
-
-Registers a task as the *default* task, meaning it will be executed if `bump` is invoked with no arguments. If this decorator is not used, a builtin `help` task will be executed instead.
-
-```python
-@default
-def usage():
-	'''This is an example default task.'''
-	print 'Please specify a task to execute.'
+```bash
+$ bump docs all
+Documenting 'all' as markdown
+$ bump docs --format rst bumpy
+Documenting 'bumpy' as rst
+$ bump docs
+abort [bumpy.main]: Too few arguments: [docs] expects 1
+$ bump docs --format rst
+abort [bumpy.main]: Too few arguments: [docs] expects 1
 ```
 
----
-
-##### `@setup`
-
-Registers a task as the *setup* task, meaning it will be executed immediately, *before* all other Bumpy processing occurs.
-
-```python
-@setup
-def begin():
-	'''This is an example setup task.'''
-	print 'Beginning execution.'
-```
-
----
-
-##### `@teardown`
-
-Registers a task as the *teardown* task, meaning it will be executed *after* all other Bumpy processing has occurred.
-
-```python
-@teardown
-def end():
-	'''This is an example teardown task.'''
-	print 'Ending execution.'
-```
-
----
-
-##### `@private`
-
-Registers a task as a *private* task, meaning it will be omitted from the builtin `help` output and can only be invoked by other tasks, rather than through `bump`.
-
-```python
-@private
-def secret():
-	'''This is an example private task.'''
-	print 'Try invoking this with bump!'
-```
-
----
-
-##### `@method`
-
-Registers a task as a *method*, meaning it will have a reference to itself passed in as the first parameter, much like traditional class-based methods.
-
-```python
-@method
-def what(self):
-	'''This is an example method.'''
-	print 'Hello! My name is ' + self.name
-```
-
----
+Keyword arguments *must* come before standard arguments, contrary to Python's standards.
 
 #### Helpers
 
-##### `abort(message)`
-
-Raises an exception and immediately aborts Bumpy execution, printing the error message as output.
+To abort task execution and display an error message, use `abort(message, *formatargs)`:
 
 ```python
-@task
-def fail():
-	'''This is an example task that is destined to fail.'''
-	abort('This task is bad.')
+@b.task
+def abort():
+	b.abort('This task is bad.')
 ```
+
+If `*formatargs` are provided, `message` will be used as a string format for `str.format`.
 
 ---
 
-##### `shell(command)`
-
-Pass `command` to the shell and return the output.
+To invoke shell commands, use `shell(command, *formatargs)`:
 
 ```python
-@task
+@b.task
 def echo():
 	'''This is an example task that uses a shell command.'''
-	print shell('echo hi')
+	print b.shell('echo hi')
 ```
+
+If `*formatargs` are provided, `command` will be used as a string format for `str.format`.
 
 ---
 
-##### `require(*reqs)`
-
-The internal implementation of the `@requires(*reqs)` decorator, with the advantage that it can be called during task runtime rather than during task loading.
+To require tasks during execution rather than pre-execution, use `require(*reqs)`:
 
 ```python
-@task
-def explode():
-	'''This is a very bizarre example.'''
-	require(fail)
+@b.task
+def test(fail=False):
+	if fail:
+		require(abort)
+
+	print 'Flexibly surviving'
 ```
+
+To check whether requirements are valid without actually executing them, use `valid(*reqs)`.
 
 ---
 
-##### `age(*paths)`
-
-Return the *youngest* age of any given `path`. If any given does not exist, the current time since the Unix epoch is returned. Subsequently, a missing path will always be interpreted as older than an existing path.
+To get the youngest age of a collection of files, use: `age(*paths)`:
 
 ```python
-@task
-def newer():
-	'''This is an example task that uses the age helper.'''
-	if age('bum.py') < age('name.txt'):
-		print 'Your bumpfile is so young!'
-	else:
-		print 'Your name.txt is so young!'
+@b.task(reqs='input.txt', gens='output.txt')
+def output():
+	if b.age('input.txt') < b.age('output.txt'):
+		b.shell('cp input.txt output.txt')
 ```
 
 ---
 
-##### `valid(*reqs)`
-
-Returns whether all tasks have already been executed and all files exist.
-
----
-
-##### `clean()`
-
-Automatically removes any files that have been registered through a `@generates(target)` decorator.
+If you're meticulous about recording your generated files with `gens`, Bumpy will be able to automatically remove all generated files with `clean()`:
 
 ```python
-@task
-def cleanup():
-	'''This is an example task that cleans all generated files.'''
-	clean()
+@b.task
+def clean():
+	b.clean()
 ```
 
-#### Not documented yet:
+### Namespaces
 
-Feel free to investigate the source for these. I'll write them up shortly:
+Tasks can be grouped into namespaces by using an optional `namespace` keyword argument:
 
-* `@args(*args)`
-* `@suppress(*types)`
-* `@generic`
-* `@attributes(*attrs)`
-* `@options`
-* `config(*settings)`
-* `clone(task)`
+```python
+@b.task(namespace='db')
+def init():
+	print 'Initialize database'
+```
+
+```bash
+$ bump db.init
+Initialize database
+```
+
+By default, any tasks in your `build.py` or `bum.py` file will be included in the global namespace. Bumpy will also search for a `bump/` directory and import any modules it finds there, giving each task found an appropriate namespace based on its module name. Lastly, if you `import` any modules from your `build.py` or `bum.py`, tasks in those modules will also be given an appropriate namespace.
+
 
 ### CLI
 
-Included in the package is a tool called `bump`. By default, `bump` will search the current working directory for a file named `bum.py` or `build.py`, load it, and then pass the CLI arguments on to Bumpy. Normal mode Bumpy allows you to specify multiple tasks at a time and will execute them each in sequence:
-
-```bash
-$ bump clean compile run
-```
-
-Additionally, Bumpy allows you to abbreviate task names as long as they remain uniquely identifiable:
-
-```bash
-$ bump cl co r
-```
-
 `bump --version` will print the currently running version of Bumpy.
 
+`bump -h` or `bump --help` will print a built-in help message.
+
 `bump -f <file>` will tell `bump` to load a different file instead of `bum.py` or `build.py`.
+
+`bump -v TASK` will enable verbose mode, printing an enter/exit message each time a task begins and ends execution.
+
+`bump TASK1 TASK2 TASK3` will execute tasks in sequence
