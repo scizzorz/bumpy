@@ -81,6 +81,30 @@ def _highlight(string, color):
 	else:
 		return string
 
+def _taskify(func):
+	global TASKS
+	if not isinstance(func, _Task):
+		func = _Task(func)
+
+		spec = inspect.getargspec(func.func)
+		if spec.args and spec.defaults:
+			num_args = len(spec.args)
+			num_keys = len(spec.defaults)
+			isflag = lambda x, y: '' if x.defaults[y] is False else '='
+
+			func.expects = spec.args[:(num_args - num_keys)]
+			func.defaults = {spec.args[i - num_keys]: spec.defaults[i] for i in range(num_keys)}
+			func.args = [key + isflag(func, key) for key in func.defaults]
+
+		if not func.name.startswith('_'):
+			TASKS[func.name] = func
+	return func
+
+def _tuplify(args):
+	if not isinstance(args, tuple):
+		args = (args,)
+	return args
+
 
 # Private classes
 class _AbortException(Exception):
@@ -207,30 +231,6 @@ class _Generic:
 		generates(target)(self.task)
 		return self
 
-
-def _taskify(func):
-	global TASKS
-	if not isinstance(func, _Task):
-		func = _Task(func)
-
-		spec = inspect.getargspec(func.func)
-		if spec.args and spec.defaults:
-			num_args = len(spec.args)
-			num_keys = len(spec.defaults)
-			isflag = lambda x, y: '' if x.defaults[y] is False else '='
-
-			func.expects = spec.args[:(num_args - num_keys)]
-			func.defaults = {spec.args[i - num_keys]: spec.defaults[i] for i in range(num_keys)}
-			func.args = [key + isflag(func, key) for key in func.defaults]
-
-		if not func.name.startswith('_'):
-			TASKS[func.name] = func
-	return func
-
-def _tuplify(args):
-	if not isinstance(args, tuple):
-		args = (args,)
-	return args
 
 # Decorators | attributes
 def task(*args, **kwargs):
