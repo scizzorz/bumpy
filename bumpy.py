@@ -218,7 +218,6 @@ class _Task:
 		return ''.join(' ' + arg for arg in self.args).upper()
 
 
-
 # The decorator
 def task(*args, **kwargs):
 	'''Register a function as a task, as well as applying any attributes. '''
@@ -258,8 +257,8 @@ def task(*args, **kwargs):
 				GENERATES[kwargs['gens']] = func
 
 			if 'alias' in kwargs:
-				func.aliases = _tuplify(kwargs['alias'])
-				TASKS.update({alias: func for alias in func.aliases})
+				full = lambda x: func.mod + '.' + x if func.mod != '__bumpy_main__' else x
+				func.aliases = (full(alias) for alias in _tuplify(kwargs['alias']))
 
 			return func
 
