@@ -37,3 +37,13 @@ def _teardown():
 def output():
 	if b.age('input.txt') < b.age('output.txt'):
 		b.shell('cp input.txt output.txt')
+
+@b.task
+def args(arg1, arg2):
+	print 'arg1 = {!r}, arg2 = {!r}'.format(arg1, arg2)
+
+@b.task
+def kwargs(msg='Hello, world!', double=False):
+	print msg
+	if double:
+		print msg
