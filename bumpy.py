@@ -1,6 +1,7 @@
 import getopt, inspect, os, subprocess, time, traceback
 
-__version__ = '0.4.0'
+__version_info__ = (0, 4, 1)
+__version__ = '.'.join(map(str, __version_info__))
 
 # Configuration settings
 CONFIG = {
