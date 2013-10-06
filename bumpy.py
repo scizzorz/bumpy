@@ -66,7 +66,7 @@ def _opts_to_dict(*opts):
 			key = key[1:]
 		if val == '':
 			val = True
-		ret[key] = val
+		ret[key.replace('-','_')] = val
 	return ret
 
 def _highlight(string, color):
@@ -92,7 +92,7 @@ def _taskify(func):
 
 			func.args = spec.args[:(num_args - num_kwargs)]
 			func.defaults = {spec.args[i - num_kwargs]: spec.defaults[i] for i in range(num_kwargs)}
-			func.kwargs = [key + isflag(func, key) for key in func.defaults]
+			func.kwargs = [key.replace('_','-') + isflag(func, key) for key in func.defaults]
 
 		if not func.name.startswith('_'):
 			TASKS[func.fullname] = func
