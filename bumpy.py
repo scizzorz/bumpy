@@ -16,6 +16,7 @@ LOCALE = {
 	'abort': 'abort {}: {}',
 	'abort_bad_file': "required file '{}' does not exist",
 	'abort_bad_task': 'required task {} failed',
+	'abort_bad_args': 'required task {} expects {} arguments',
 	'enter': 'enter {}',
 	'enter_gen': 'enter {} -> {!r}',
 	'enter_genreq': 'enter {} -> {!r} <- {}',
@@ -31,7 +32,7 @@ LOCALE = {
 	'leave': 'leave {}',
 	'shell': '$ {}',
 	'error_no_task': 'Unable to find task "{}"',
-	'error_wrong_args': 'Incorrect amount of arguments: {} expects {}',
+	'error_wrong_args': 'Too few arguments: {} expects {}',
 	'error_unknown': 'Unknown error',
 	}
 
@@ -277,10 +278,13 @@ def require(*reqs):
 				req = GENERATES[req]
 
 		if req.valid is None:
+			if len(req.args):
+				abort(LOCALE['abort_bad_args'], req, len(req.args))
+
 			req()
 
 		if req.valid is False:
-			abort(LOCALE['abort_bad_task'].format(req))
+			abort(LOCALE['abort_bad_task'], req)
 
 def valid(*things):
 	'''Return True if all tasks or files are valid.
