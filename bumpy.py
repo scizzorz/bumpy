@@ -1,4 +1,4 @@
-import getopt, inspect, os, subprocess, sys, time, traceback
+import getopt, inspect, os, subprocess, time, traceback
 
 __version__ = '0.4.0'
 
@@ -49,12 +49,10 @@ TEARDOWN = None
 # Private helpers
 def _get_task(name):
 	'''Look up a task by name.'''
-	global TASKS
-
 	if name in TASKS:
 		return TASKS[name]
 	elif CONFIG['abbrev']:
-		matches = [task for key, task in TASKS.items() if task.match(name)]
+		matches = [x for x in TASKS.values() if x.match(name)]
 		if matches:
 			return matches[0]
 
@@ -62,9 +60,12 @@ def _opts_to_dict(*opts):
 	'''Convert a tuple of options returned from getopt into a dictionary.'''
 	ret = {}
 	for key, val in opts:
-		if key[:2] == '--': key = key[2:]
-		elif key[:1] == '-': key = key[1:]
-		if val == '': val = True
+		if key[:2] == '--':
+			key = key[2:]
+		elif key[:1] == '-':
+			key = key[1:]
+		if val == '':
+			val = True
 		ret[key] = val
 	return ret
 
@@ -80,7 +81,6 @@ def _highlight(string, color):
 
 def _taskify(func):
 	'''Convert a function into a task.'''
-	global TASKS
 	if not isinstance(func, _Task):
 		func = _Task(func)
 
@@ -184,11 +184,12 @@ class _Task:
 
 		return _highlight('[' + self.fullname + ']', color)
 
-	def __print(self, id, *args):
+	def __print(self, msg, *args):
 		'''Print a message if it's not suppressed.'''
-		if 'all' in CONFIG['suppress'] or id in CONFIG['suppress']: return
+		if 'all' in CONFIG['suppress'] or msg in CONFIG['suppress']:
+			return
 
-		print LOCALE[id].format(*args)
+		print LOCALE[msg].format(*args)
 
 	def match(self, name):
 		'''Compare an argument string to the task name.'''
@@ -209,7 +210,7 @@ class _Task:
 
 	def kwargstr(self):
 		'''Concatenate keyword arguments into a string.'''
-		temp = [' [--' + k + (' ' + str(v) if v is not False else '') + ']' for k,v in self.defaults.items()]
+		temp = [' [--' + k + (' ' + str(v) if v is not False else '') + ']' for k, v in self.defaults.items()]
 		return ''.join(temp)
 
 	def argstr(self):
@@ -229,7 +230,7 @@ def task(*args, **kwargs):
 	# as well as @task(), @task('default'), etc.
 	else:
 		def wrapper(func):
-			global TASKS, GENERATES, DEFAULT, SETUP, TEARDOWN
+			global DEFAULT, SETUP, TEARDOWN
 			func = _taskify(func)
 
 			if 'default' in args:
@@ -254,6 +255,7 @@ def task(*args, **kwargs):
 
 			if 'gens' in kwargs:
 				func.gens = kwargs['gens']
+				GENERATES[kwargs['gens']] = func
 
 			if 'alias' in kwargs:
 				func.aliases = _tuplify(kwargs['alias'])
@@ -293,7 +295,7 @@ def valid(*things):
 	for thing in things:
 		if type(thing) is str and not os.path.exists(thing):
 			return False
-		if req.valid is None:
+		if thing.valid is None:
 			return False
 	return True
 
@@ -325,7 +327,6 @@ def age(*paths):
 
 def clean():
 	'''Removes all files added to the generator table via @generates.'''
-	global GENERATES
 	shell('rm -f ' + ' '.join([key for key in GENERATES]))
 
 def abort(message, *args):
@@ -344,7 +345,7 @@ def config(**kwargs):
 # bump --help display
 def _help():
 	'''Print all available tasks and descriptions.'''
-	for key, task in TASKS.items():
+	for task in TASKS.values():
 		tags = ''
 		if task is DEFAULT:
 			tags += '*'
@@ -375,10 +376,10 @@ def _invoke(task, args):
 		kwargs.update(temp_kwargs)
 
 	if task.args:
-		for e in task.args:
+		for arg in task.args:
 			if not len(args):
 				abort(LOCALE['error_wrong_args'], task, len(task.args))
-			kwargs.update({e: args[0]})
+			kwargs.update({arg: args[0]})
 			args = args[1:]
 
 	task(**kwargs)
