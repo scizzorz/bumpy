@@ -333,12 +333,6 @@ def abort(message, *args):
 
 	raise _AbortException(message)
 
-def config(**kwargs):
-	'''Set bumpy configuration values.'''
-	for key in kwargs:
-		CONFIG[key] = kwargs[key]
-
-
 # bump --help display
 def _help():
 	'''Print all available tasks and descriptions.'''
