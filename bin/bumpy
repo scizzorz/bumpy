@@ -2,6 +2,9 @@
 import getopt, imp, os, sys
 import bumpy
 
+if '.' not in sys.path:
+	sys.path.append('.')
+
 def _import(filename, module='__bumpy_main__'):
 	if os.path.exists(filename):
 		return imp.load_source(module, filename)
