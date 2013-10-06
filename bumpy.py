@@ -353,7 +353,7 @@ def _help():
 			print LOCALE['help_reqs'].format(task.reqstr())
 		if task.gens:
 			print LOCALE['help_gens'].format(task.gens)
-		if task.defaults:
+		if task.args or task.defaults:
 			print LOCALE['help_args'].format(task.ns + task.name, task.kwargstr(), task.argstr())
 
 
