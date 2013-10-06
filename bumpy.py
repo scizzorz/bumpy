@@ -8,7 +8,6 @@ CONFIG = {
 	'color_invalid': 4,
 	'color_success': 2,
 	'color_fail': 1,
-	'abbrev': True,
 	'suppress': (),
 	}
 
@@ -39,8 +38,8 @@ LOCALE = {
 
 
 # State variables
-TASKS = {}
-GENERATES = {}
+TASKS = list()
+GENERATES = dict()
 DEFAULT = None
 SETUP = None
 TEARDOWN = None
@@ -49,12 +48,9 @@ TEARDOWN = None
 # Private helpers
 def _get_task(name):
 	'''Look up a task by name.'''
-	if name in TASKS:
-		return TASKS[name]
-	elif CONFIG['abbrev']:
-		matches = [x for x in TASKS.values() if x.match(name)]
-		if matches:
-			return matches[0]
+	matches = [x for x in TASKS if x.match(name)]
+	if matches:
+		return matches[0]
 
 def _opts_to_dict(*opts):
 	'''Convert a tuple of options returned from getopt into a dictionary.'''
@@ -95,7 +91,7 @@ def _taskify(func):
 			func.kwargs = [key.replace('_','-') + isflag(func, key) for key in func.defaults]
 
 		if not func.name.startswith('_'):
-			TASKS[func.fullname] = func
+			TASKS.append(func)
 
 	return func
 
@@ -133,10 +129,7 @@ class _Task:
 		self.name = func.__name__
 		self.help = func.__doc__
 		self.mod = inspect.getmodule(func).__name__
-		if self.mod == '__bumpy_main__':
-			self.fullname = self.name
-		else:
-			self.fullname = self.mod + '.' + self.name
+		self.ns = '' if self.mod == '__bumpy_main__' else self.mod + '.'
 
 	def __call__(self, *args, **kwargs):
 		'''Invoke the wrapped function after meeting all requirements.'''
@@ -182,7 +175,7 @@ class _Task:
 		elif self.valid == False:
 			color = CONFIG['color_fail']
 
-		return _highlight('[' + self.fullname + ']', color)
+		return _highlight('[' + self.ns + self.name + ']', color)
 
 	def __print(self, msg, *args):
 		'''Print a message if it's not suppressed.'''
@@ -193,11 +186,11 @@ class _Task:
 
 	def match(self, name):
 		'''Compare an argument string to the task name.'''
-		if self.fullname.startswith(name):
+		if (self.ns + self.name).startswith(name):
 			return True
 
 		for alias in self.aliases:
-			if alias.startswith(name):
+			if (self.ns + alias).startswith(name):
 				return True
 
 	def reqstr(self):
@@ -206,7 +199,7 @@ class _Task:
 
 	def aliasstr(self):
 		'''Concatenate the aliases tuple into a string.'''
-		return ', '.join(x.__repr__() for x in self.aliases)
+		return ', '.join(repr(self.ns + x) for x in self.aliases)
 
 	def kwargstr(self):
 		'''Concatenate keyword arguments into a string.'''
@@ -241,8 +234,8 @@ def task(*args, **kwargs):
 			if 'teardown' in args:
 				TEARDOWN = func
 
-			if 'private' in args and func.fullname in TASKS:
-				del TASKS[func.fullname]
+			if 'private' in args:
+				TASKS.remove(func)
 
 			if 'method' in args:
 				func.method = True
@@ -257,8 +250,10 @@ def task(*args, **kwargs):
 				GENERATES[kwargs['gens']] = func
 
 			if 'alias' in kwargs:
-				full = lambda x: func.mod + '.' + x if func.mod != '__bumpy_main__' else x
-				func.aliases = (full(alias) for alias in _tuplify(kwargs['alias']))
+				func.aliases = _tuplify(kwargs['alias'])
+
+			if 'namespace' in kwargs:
+				func.ns = kwargs['namespace'] + '.' if kwargs['namespace'] else ''
 
 			return func
 
@@ -344,7 +339,7 @@ def config(**kwargs):
 # bump --help display
 def _help():
 	'''Print all available tasks and descriptions.'''
-	for task in TASKS.values():
+	for task in sorted(TASKS, key=lambda x: (x.ns or '000') + x.name):
 		tags = ''
 		if task is DEFAULT:
 			tags += '*'
@@ -362,7 +357,7 @@ def _help():
 		if task.gens:
 			print LOCALE['help_gens'].format(task.gens)
 		if task.defaults:
-			print LOCALE['help_args'].format(task.fullname, task.kwargstr(), task.argstr())
+			print LOCALE['help_args'].format(task.ns + task.name, task.kwargstr(), task.argstr())
 
 
 # Do everything awesome.
