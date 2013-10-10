@@ -124,6 +124,7 @@ class _Task:
 
 	valid = None
 	method = False
+	consume = False
 
 	def __init__(self, func):
 		'''Initialize the Task with a name and help string.'''
@@ -240,6 +241,9 @@ def task(*args, **kwargs):
 
 			if 'method' in args:
 				func.method = True
+
+			if 'consume' in args:
+				func.consume = True
 
 			if 'reqs' in kwargs:
 				func.reqs = _tuplify(kwargs['reqs'])
@@ -373,8 +377,12 @@ def _invoke(task, args):
 			kwargs.update({arg: args[0]})
 			args = args[1:]
 
-	task(**kwargs)
-	return args
+	if task.consume:
+		task(*args, **kwargs)
+		return []
+	else:
+		task(**kwargs)
+		return args
 
 @task('private')
 def main(args):
