@@ -241,6 +241,7 @@ def task(*args, **kwargs):
 
 			if 'method' in args:
 				func.method = True
+				func.args = func.args[1:]
 
 			if 'consume' in args:
 				func.consume = True
